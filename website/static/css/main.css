@@ -1,0 +1,137 @@
+@charset "UTF-8";
+@font-face {
+  font-family: "Pacifico";
+  font-style: normal;
+  font-weight: normal;
+  src: local("Pacifico"), url("../typo/Pacifico-Regular.ttf") format("truetype");
+}
+body {
+  background: #fafafa;
+  color: #333;
+  margin-top: 7rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+footer {
+  text-align: center;
+}
+
+.navbar {
+  background-color: #d423bd;
+}
+
+.site-header .navbar-brand {
+  font-family: "Pacifico";
+  font-size: 1.5rem;
+}
+.site-header .navbar-brand img {
+  width: 55px;
+  height: 55px;
+}
+.site-header .navbar-nav .nav-link {
+  color: #fff;
+}
+.site-header .navbar-nav .nav-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.site-header .navbar-nav .nav-link.active {
+  font-weight: 500;
+}
+
+.content-section {
+  background: #ffffff;
+  padding: 10px 20px;
+  border: 1px solid #dddddd;
+  border-radius: 3px;
+  margin-bottom: 20px;
+}
+
+.challenge-card .card-title {
+  text-transform: uppercase;
+}
+.challenge-card .card-text {
+  max-height: 6rem;
+  overflow-y: hidden;
+}
+.challenge-card a, .challenge-card a:visited {
+  color: #333;
+  text-decoration: none;
+}
+.challenge-card a:hover, .challenge-card a:focus {
+  color: #428bca;
+}
+.challenge-card a.green-button, .challenge-card a.green-button:visited {
+  color: #fff;
+  background: #d423bd;
+}
+.challenge-card a.green-button:hover, .challenge-card a.green-button:focus {
+  color: #d423bd;
+  background: #fff;
+  border: 1px solid #d423bd;
+}
+
+.challenge-card .card-title:hover {
+  color: #428bca;
+  text-decoration: none;
+}
+
+.challenge-card .card-title::after {
+  content: " 🌱";
+}
+
+.article-title {
+  color: #444444;
+}
+
+a.article-title:hover {
+  color: #428bca;
+  text-decoration: none;
+}
+
+.article-content {
+  white-space: pre-line;
+}
+
+.article-img {
+  width: 65px;
+  height: auto;
+  margin-right: 16px;
+}
+
+.article-metadata {
+  padding-bottom: 1px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.article-metadata a:hover {
+  color: #333;
+  text-decoration: none;
+}
+
+.article-svg {
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+}
+
+.account-img {
+  height: 125px;
+  width: 125px;
+  margin-right: 20px;
+  margin-bottom: 16px;
+}
+
+.account-heading {
+  font-size: 2.5rem;
+}
+
+footer small em {
+  font-family: "Pacifico";
+}
+
+/*# sourceMappingURL=main.css.map */

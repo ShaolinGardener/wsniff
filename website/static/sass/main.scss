@@ -1,0 +1,158 @@
+@import "colors";
+@import "typo";
+@import "buttons";
+
+body {
+  background: $primary-bg-color;
+  color: $primary-fg-color;
+  margin-top: 7rem;
+}
+
+// h1, h2, h3, h4, h5, h6 {
+//     //color: #333;
+//     // font: {
+//     //     family: $wsniff-font;
+//     // }
+// }
+h3 {
+    font-size: 1.5rem;
+}
+
+footer {
+    text-align: center;
+}
+
+.navbar {
+  background-color: $accent-fg-color;
+}
+
+.site-header {
+    .navbar-brand {
+        font: {
+            family: $wsniff-font;
+            size: 1.5rem;
+        }
+        img {
+            width: 55px;
+            height: 55px;
+        }
+    }
+
+    .navbar-nav {
+        .nav-link {
+            color: #fff;
+        }
+        .nav-link:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+        .nav-link.active {
+            font-weight: 500;
+        }
+    }
+}
+
+
+.content-section {
+  background: #ffffff;
+  padding: 10px 20px;
+  border: 1px solid #dddddd;
+  border-radius: 3px;
+  margin-bottom: 20px;
+}
+
+.challenge-card {
+
+    .card-title {
+        text-transform: uppercase;
+    }
+
+    .card-text {
+        max-height: 6rem;
+        overflow-y: hidden;
+    }
+
+    a, a:visited {
+        color: $primary-fg-color;
+        text-decoration: none;
+    }
+    a:hover, a:focus {
+        color: $hover-fg-color;
+    }
+
+    a.green-button, a.green-button:visited {
+        color: #fff;
+        background: $accent-fg-color;
+    }
+
+    a.green-button:hover, a.green-button:focus {
+        color: $accent-fg-color;
+        background: #fff;
+        border: 1px solid $accent-fg-color;
+    }
+}
+.challenge-card .card-title:hover {
+    color: $hover-fg-color;
+    text-decoration: none;
+}
+.challenge-card .card-title::after {
+    content: " 🌱";
+}
+
+
+
+.article-title {
+  color: #444444;
+}
+a.article-title:hover {
+    color: $hover-fg-color;
+    text-decoration: none;
+}
+
+.article-content {
+  white-space: pre-line;
+}
+
+.article-img {
+  width: 65px;
+  height: auto;
+  margin-right: 16px;
+}
+
+.article-metadata {
+  padding-bottom: 1px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e3e3e3
+}
+
+.article-metadata a:hover {
+  color: #333;
+  text-decoration: none;
+}
+
+.article-svg {
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+}
+
+.account-img {
+  height: 125px;
+  width: 125px;
+  margin-right: 20px;
+  margin-bottom: 16px;
+}
+
+.account-heading {
+  font-size: 2.5rem;
+}
+
+footer {
+  small {
+    em {
+      font-family: $wsniff-font;
+    }
+  }
+  
+  
+}
