@@ -5,8 +5,8 @@ from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 from website.models import User
 
 class CaptureForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired(), Length(min=2, max=256)])
-    desc = StringField("Description", validators=[DataRequired()])
+    title = StringField("Name", validators=[DataRequired(), Length(min=2, max=256)])
+    desc = StringField("Description", validators=[])
     
     submit = SubmitField("Start Capture")
 

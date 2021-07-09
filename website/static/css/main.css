@@ -20,7 +20,7 @@ footer {
 }
 
 .navbar {
-  background-color: #d423bd;
+  background-color: #23c8d4;
 }
 
 .site-header .navbar-brand {
@@ -66,12 +66,12 @@ footer {
 }
 .challenge-card a.green-button, .challenge-card a.green-button:visited {
   color: #fff;
-  background: #d423bd;
+  background: #23c8d4;
 }
 .challenge-card a.green-button:hover, .challenge-card a.green-button:focus {
-  color: #d423bd;
+  color: #23c8d4;
   background: #fff;
-  border: 1px solid #d423bd;
+  border: 1px solid #23c8d4;
 }
 
 .challenge-card .card-title:hover {

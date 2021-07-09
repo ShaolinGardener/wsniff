@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import unique
 from flask import current_app
 
 from flask_login import UserMixin
@@ -21,11 +22,13 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f"User('{self.id}', '{self.username}')"
 
+
 class Capture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(128), nullable=False)
     desc = db.Column(db.Text, nullable=True)
-    date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
+    date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    filename = db.Column(db.String(20), nullable=False, unique=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
