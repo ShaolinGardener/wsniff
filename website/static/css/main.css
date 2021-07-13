@@ -83,6 +83,10 @@ footer {
   content: " 🌱";
 }
 
+.card {
+  margin-bottom: 1rem;
+}
+
 .article-title {
   color: #444444;
 }

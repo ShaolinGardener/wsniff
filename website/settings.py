@@ -1,3 +1,5 @@
+INTERFACE = "wlan1mon"
+
 FLASK_THREADED = True
 FLASK_DEBUG = True #TODO: change for production
 

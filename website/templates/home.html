@@ -3,21 +3,51 @@
 {% block content %}
 <h1>Dashboard</h1>
 <p>Here you can find all the relevant information.</p>
-<h2>Running Captures</h2>
-<ul>
+<div>
+  <h2>Running Captures</h2>
+    {% if not running %}
+      <p>Currently there is no running capture</p>
+      <p class="text-muted">Want to <a href="{{url_for('new_capture')}}">start one now</a>?</p>
+    {% endif %}
     {% for capture in running %}
-        <div class="card">
-            <div class="card-header text-muted">
-                Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
-                Id: {{ capture.id }}
-            </div>
-            <div class="card-body">
-            <h5 class="card-title">{{ capture.title }}</h5>
-            <p class="card-text">{{ capture.desc }}</p>
-            <a href="{{ url_for('capture_show', id=capture.id) }}" class="btn btn-info">Show capture</a>
-            <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger">Stop capture</a>
+    <div class="card">
+        <div class="card-header text-muted">
+            Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
+            Id: {{ capture.id }}
+        </div>
+        <div class="card-body">
+        <h5 class="card-title">{{ capture.title }}</h5>
+        <p class="card-text">{{ capture.desc }}</p>
+        <a href="{{ url_for('capture_show', id=capture.id) }}" class="btn btn-info">Show capture</a>
+        <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger">Stop capture</a>
+        </div>
+    </div>
+    {% endfor %}
+</div><!-- end running captures -->
+
+<div>
+    <h2>Finished Captures</h2>
+    {% for capture in old %}
+      {% if capture.id % 2 == 0 %}
+          <div class="row">
+      {% endif %}
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-header text-muted">
+                    Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
+                    Id: {{ capture.id }}
+                </div>
+                <div class="card-body">
+                <h5 class="card-title">{{ capture.title }}</h5>
+                <p class="card-text">{{ capture.desc }}</p>
+                <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info">Download</a>
+                <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger">Delete capture</a>
+                </div>
             </div>
         </div>
-    {% endfor %}
-</ul>
+      {% if capture.id % 2 == 1 %}
+        </div>
+      {% endif %}
+    {% endfor %} 
+</div>
 {% endblock content %}

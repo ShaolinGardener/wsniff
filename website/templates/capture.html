@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Capture {{ c.id }}</h1>
+<p>Anzahl der Pakete: <span id="num-packets"></span></p>
+<script>
+    function loadInfo() {
+        let request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                capture = JSON.parse(this.responseText)
+                document.getElementById("num-packets").innerHTML = capture.num_packets;
+            }
+        };
+        request.open("GET", "{{  url_for('capture_get', id=c.id) }}")       
+        request.send();
+    }
+
+    //use fetch instead?
+
+    document.addEventListener("DOMContentLoaded", function() {
+        setInterval(loadInfo, 1000) //setInterval could be replaced 
+    });
+</script>
+{% endblock content %}

@@ -6,6 +6,7 @@ config.py # contains passwords etc!
 *.db #do not upload our database
 db.sqlite
 *.css.map #created by sass - this only leads to merge conflicts
+captures/
 
 #downloads/
 #!challenge_pics/default.jpg #FIXME: does not work
@@ -123,6 +124,7 @@ celerybeat.pid
 .env
 .venv
 env/
+ven/
 venv/
 ENV/
 env.bak/

@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h1>Detect Access Points</h1>
+    <p>Im Folgenden eine Auflistung der BSSIDs in der Umgebung.</p>
+
+    <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">BSSID</th>
+            <th scope="col">SSID</th>
+            <th scope="col">CH</th>
+          </tr>
+        </thead>
+        <tbody id=aps>
+          <!-- java script will place aps here -->
+        </tbody>
+      </table>
+    <script>
+
+      function createNode(element) {
+          return document.createElement(element);
+      }
+
+      function append(parent, el) {
+        return parent.appendChild(el);
+      }
+
+      function refresh() {
+        const table = document.getElementById("aps");
+        //first remove old content
+        table.innerHTML = ""
+        //then replace with updated information
+        fetch("{{ url_for('detect_get') }}")
+          .then(response => response.json())
+          .then(function(data) {
+            let aps = data.aps
+            for(let mac in aps) {
+              let tr = createNode('tr')
+              let td_bssid = createNode('td')
+              td_bssid.innerHTML = mac
+              let td_ssid = createNode('td')
+              td_ssid.innerHTML = aps[mac][1]
+              let td_channel = createNode('td')
+              td_channel.innerHTML = aps[mac][2]
+
+              append(table, tr);
+              append(tr, td_bssid);
+              append(tr, td_ssid);
+              append(tr, td_channel);
+            }
+          })
+          .catch(function(error) {
+            console.log(error);
+          });
+      }
+      
+      refresh()
+      document.addEventListener("DOMContentLoaded", function() {
+        setInterval(refresh, 1000) //setInterval could be replaced 
+      });
+    </script>
+{% endblock content %}

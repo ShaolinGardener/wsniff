@@ -1,9 +1,9 @@
 from threading import Thread, Event
 from time import sleep, time
 
+from website import app
+
 from scapy.all import *
-
-
 
 
 class _Capture:
@@ -11,6 +11,10 @@ class _Capture:
         self.id = id
         self.channel = channel
         self.interface = interface
+
+        path = os.path.join(app.root_path, "static", "captures", str(id), "cap.pcap")
+        self.packet_writer = PcapWriter(path,
+                                        append=True, sync=True)
         
         self.num_packets = 0
 
@@ -18,6 +22,7 @@ class _Capture:
 
     def _handle_packet(self, pkt):
         self.num_packets += 1
+        self.packet_writer.write(pkt)
 
     def _capture(self):
         #TODO: using scapy create file and scan till stop event is set, 
@@ -28,7 +33,7 @@ class _Capture:
         while True:
             if self._stop.is_set():
                 break
-            sniff(iface="en0", prn=self._handle_packet, count=5, timeout=2)
+            sniff(iface=self.interface, prn=self._handle_packet, count=5, timeout=2)
 
     def start(self):
         self.t = Thread(target=self._capture)
@@ -74,10 +79,8 @@ def get_running_ids():
 
 
 def main():
-    stop_capture("blub")
-    start_capture("blub", 11)
-    start_capture("blub", 11)
-    start_capture("2", 2)
+    start_capture("blub", 11, interface="wlan0mon")
+    start_capture("2", 2, interface="wlan0mon")
     stop_capture("blub")
     stop_capture("2")
 
