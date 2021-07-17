@@ -35,6 +35,14 @@
                     {{ form.desc(class='form-control form-control-lg') }}
                 {% endif %}
             </div>
+            <div class="form-group">
+                {{ form.channel.label(class='form-control-label') }}
+                {{ form.channel(class='form-control') }}
+            </div>
+            <div class="form-check">
+                {{ form.gpsTracking(class='form-check-input') }}
+                {{ form.gpsTracking.label(class='form-check-label') }}
+            </div>
         </fieldset>
         <div class="form-group">
             {{ form.submit(class='btn btn-outline-info') }}

@@ -38,7 +38,7 @@
             for(let mac in aps) {
               let tr = createNode('tr')
               let td_bssid = createNode('td')
-              td_bssid.innerHTML = mac
+              td_bssid.innerHTML = aps[mac][0]
               let td_ssid = createNode('td')
               td_ssid.innerHTML = aps[mac][1]
               let td_channel = createNode('td')
@@ -57,7 +57,7 @@
       
       refresh()
       document.addEventListener("DOMContentLoaded", function() {
-        setInterval(refresh, 1000) //setInterval could be replaced 
+        setInterval(refresh, 10000) //setInterval could be replaced 
       });
     </script>
 {% endblock content %}

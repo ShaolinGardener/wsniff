@@ -1,4 +1,4 @@
-INTERFACE = "wlan1mon" #wlan1mon en0
+INTERFACE = "en1" #wlan1mon en0
 
 FLASK_THREADED = True
 FLASK_DEBUG = True #TODO: change for production

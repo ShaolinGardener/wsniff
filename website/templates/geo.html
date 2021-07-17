@@ -7,10 +7,24 @@ integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0v
 crossorigin=""></script>
     
 <h2>My Map</h2>
+
+{% if not available %}
+<div class="alert alert-danger" role="alert">
+    No GPS Connection
+</div>
+{% else %}
+<div class="alert alert-success" role="alert">
+    GPS Connection Available
+</div>
+{% endif %}
+
 <div id="mapid" style="height: 500px;"></div>
 
 <script type="text/javascript">
-    var mymap = L.map('mapid').setView([49.77915766666667, 11.1776305], 18);
+    let lat = {{ lat }}
+    let lon = {{ lon }}
+    //var mymap = L.map('mapid').setView([49.77915766666667, 11.1776305], 18);
+    var mymap = L.map('mapid').setView([lat, lon], 18);
 
     //da muss man sich registrieren / braucht access token
     // L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -212,7 +226,14 @@ crossorigin=""></script>
         [49.7793,11.177561333333333],
         [49.77915766666667,11.1776305]]
 
-        var polyline = L.polyline(points, {color: '#d423bd', smoothFactor: 2.0}).addTo(mymap);
+        let mewIcon = L.icon({
+            iconUrl: '{{ url_for("static", filename="img/mew.png") }}',
+            iconSize: [50, 50],
+            iconAnchor: [25, 25],
+            popupAnchor: [20, 20]
+        });
+
+        /*var polyline = L.polyline(points, {color: '#d423bd', smoothFactor: 2.0}).addTo(mymap);
 
         let wifiIcon = L.icon({
             iconUrl: '{{ url_for("static", filename="img/marker.png") }}',
@@ -220,12 +241,7 @@ crossorigin=""></script>
             iconAnchor: [25, 30],
             popupAnchor: [0, 0]
         });
-        let mewIcon = L.icon({
-            iconUrl: '{{ url_for("static", filename="img/mew.png") }}',
-            iconSize: [50, 50],
-            iconAnchor: [25, 25],
-            popupAnchor: [20, 20]
-        });
+        
         for (let i = 0; i < points.length; i++) {
             if(i % 13 == 0) {
                 let marker = L.marker(points[i], {opacity: 0.8, icon: wifiIcon}).addTo(mymap)
@@ -235,7 +251,9 @@ crossorigin=""></script>
         }
         let currentPos = L.marker(points[points.length-1], {opacity: 0.9, icon: mewIcon}).addTo(mymap)
         // zoom the map to the polyline
-        mymap.fitBounds(polyline.getBounds());
+        mymap.fitBounds(polyline.getBounds());*/
+
+        let currentPos = L.marker([lat, lon], {opacity: 0.9, icon: mewIcon}).addTo(mymap)
     
         // points.forEach(function(point) {
         //     let marker = L.marker(point).addTo(mymap)

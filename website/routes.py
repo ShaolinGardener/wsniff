@@ -9,6 +9,7 @@ from website.settings import INTERFACE
 
 from website.hw import get_capture, start_capture, stop_capture, get_running_ids
 from website.aps import start_scan, stop_scan, get_aps
+import website.gps as gps
 
 from sqlalchemy import desc
 import secrets
@@ -42,7 +43,7 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for("home"))
 
-    form = RegistrationForm();
+    form = RegistrationForm()
     if form.validate_on_submit():
         hashed_passw = bcrypt.generate_password_hash(form.password.data).decode("utf-8")
         user = User(username=form.username.data, password=hashed_passw)
@@ -77,10 +78,26 @@ def login():
     return render_template("login.html", title="Login", form=form)
 
 
+@app.route("/geo/start")
+@login_required
+def geo_start():
+    gps.start_gps_tracking()
+    flash("Started GPS Module", "success")
+    return redirect(url_for("geo"))
+
+@app.route("/geo/stop")
+@login_required
+def geo_stop():
+    gps.stop_gps_tracking()
+    flash("Stopped GPS Module", "success")
+    return redirect(url_for("geo"))
+
 @app.route("/geo")
 @login_required
-def secret():
-    return render_template("geo.html")
+def geo():
+    available = gps.is_gps_available()
+    lat, lon = gps.get_gps_data()
+    return render_template("geo.html", available=available, lat=lat, lon=lon)
 
 @app.route("/capture/<int:id>/start")
 @login_required
@@ -211,7 +228,7 @@ def detect_start():
 @login_required
 def detect_stop():
     stop_scan()
-    flash("Stopped Acess Point Scan", "success")
+    flash("Stopped Access Point Scan", "success")
     return redirect(url_for("detect_aps")) 
 
 @app.route("/detect/get")

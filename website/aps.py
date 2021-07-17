@@ -1,5 +1,6 @@
 from threading import Thread, Event, Lock
-from time import sleep, time
+from time import sleep
+import time
 import random, os
 
 from scapy.all import *
@@ -12,13 +13,14 @@ class AccessPoint():
         self.ssid = ssid
         self.channel = channel
 
-        self.t_last_seen = time()
+        self.t_last_seen = time.time()
     
     def isAlive(self, t_death=20):
-        return time() - self.t_last_seen < t_death
+        return time.time() - self.t_last_seen < t_death
 
     def refresh(self):
-        self.t_last_seen = time
+        self.t_last_seen = time.time()
+
 
     def __str__(self):
         return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
@@ -34,7 +36,11 @@ def print_access_points():
     for ap in aps.values():
         print(ap)
 
-def clean(t_remove, t_sleep=30):
+def clean(t_remove, t_sleep=10):
+    """
+    t_remove: if no beacon frame of a specific access point is received within this time frame, it is removed from the list 
+    t_sleep: timespan between cleaning traversals
+    """
     while _running.is_set():
         sleep(t_sleep)
         
@@ -88,15 +94,16 @@ def handlePacket(pkt):
 
 def scan(iface):
     while _running.is_set():
-        print("hey i am antonia")
         sniff(iface=iface, prn=handlePacket, count=5, timeout=2)
+    #because stop_scan can run through before while loop, access points can be added to aps after _running has been unset
+    #therefore it is necessary to call clear exactly here
+    aps.clear()
 
 
-    
-
-def start_scan(t_remove: int, interface:str="wlan1mon"):
+def start_scan(interface:str="wlan1mon" , t_remove:int=15, t_clean=10):
     """
     t_remove: if the access point has not been seen for this time, it is removed from the list of active access points
+    t_clean: time span between two iterations of the cleaning thread
     """
     #already running
     if _running.is_set():
@@ -109,33 +116,35 @@ def start_scan(t_remove: int, interface:str="wlan1mon"):
     thread.start()
 
     #scan packets to find beacon frames
-    thread = Thread(target=scan, args=(interface, ), name="scanner")
+    thread = Thread(target=scan, args=(interface,), name="scanner")
     thread.daemon = True
     thread.start()
 
     #remove old AccessPoints 
-    thread = Thread(target=clean, args=(t_remove, ), name="cleaner")
+    thread = Thread(target=clean, args=(t_remove, t_clean), name="cleaner")
     thread.daemon = True
     thread.start()
 
 def stop_scan():
     _running.clear()
-    aps.clear() #clear results from previous scan
+    aps.clear() #clear results from previous scan (this is also done in the scan function and necessary there, but for logical reasons also included here)
 
 def get_aps():
     #lock.acquire()
     copy = aps.copy()
     #lock.release()
-    return copy
-
+    res = [(ap.bssid, ap.ssid, ap.channel) for ap in copy.values()]
+    return res
 
 if __name__ == "__main__":
-    start_scan()
+    start_scan(t_remove=0.5)
     sleep(2)
     t = get_aps()
     for ap in t:
-        print(ap, t[ap])
+        print(ap)
     sleep(7)
+
+    print("[+] Seven seconds later:")
     t = get_aps()
     for ap in t:
         print(ap)

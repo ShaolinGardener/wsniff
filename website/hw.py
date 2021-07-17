@@ -1,10 +1,29 @@
 from threading import Thread, Event
 from time import sleep, time
+import subprocess
 
 from website import app
 
 from scapy.all import *
 
+
+
+class Interface:
+      
+    def __init__(self, name: str):
+        self.name = name
+        self.mon_name = name + "mon"
+        self.str_monitor_enable  = f"ifconfig {self.name} down; iw dev {self.name} interface add {self.mon_name} type monitor; ifconfig {self.mon_name} down; iw dev {self.mon_name} set type monitor; ifconfig {self.mon_name} up"
+        self.str_monitor_disable = f"iw dev {self.mon_name} del; ifconfig {self.name} up"
+    
+    def enable_monitor_mode(self):
+        subprocess.run(self.str_monitor_enable, shell=True, check=True)
+
+    def disable_monitor_mode(self):
+        subprocess.run(self.str_monitor_disable, shell=True, check=True)
+
+    def set_channel(self, channel: int):
+        subprocess.run(f"sudo iwconfig {self.name} channel {channel}")
 
 class _Capture:
     def __init__(self, id: int, channel: int, interface: str):
@@ -21,6 +40,11 @@ class _Capture:
         self._stop = Event()
 
     def _handle_packet(self, pkt):
+        # if not pkt.haslayer(Dot11):
+        #     return
+        # source = pkt.getlayer(Dot11).addr1
+        # source = pkt.getlayer(Dot11).addr4
+        
         self.num_packets += 1
         self.packet_writer.write(pkt)
 
@@ -77,16 +101,20 @@ def get_capture(id):
 def get_running_ids():
     return list(captures.keys())
 
+def callback(frame):
+    print(frame)
 
-def main():
+
+def test_capture():
     start_capture("blub", 11, interface="wlan0mon")
     start_capture("2", 2, interface="wlan0mon")
     stop_capture("blub")
     stop_capture("2")
 
-def callback(frame):
-    print(frame)
+def test_interface():
+    iface = Interface("wlan1")
+    iface.enable_monitor_mode()
 
 if __name__ == "__main__":
-    main()
+    test_interface()
     
