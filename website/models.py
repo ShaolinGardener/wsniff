@@ -29,8 +29,10 @@ class Capture(db.Model):
     desc = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     filename = db.Column(db.String(20), nullable=False, unique=True)
+    channel = db.Column(db.Integer, nullable=False)
+    gps = db.Column(db.Boolean, nullable=False, default=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def __repr__(self):
-        return f"Capture('{self.id}', '{self.title}', '{self.date_posted}')"
+        return f"Capture('{self.id}', '{self.title}', '{self.date_created}')"

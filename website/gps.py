@@ -152,10 +152,11 @@ def get_gps_data():
     _lock.release()
     return lat, lon
 
-#TODO: should be called on startup
+
 def start_gps_tracking():
     _stop_event.clear()
     
+    print("[*] Starting GPS Thread")
     thread = Thread(target=_read_data, name="gps tracker")
     thread.daemon = True
     thread.start()

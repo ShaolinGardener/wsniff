@@ -10,6 +10,7 @@ from website.settings import INTERFACE
 from website.hw import get_capture, start_capture, stop_capture, get_running_ids
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
+from website.interfaces import monitor_iface
 
 from sqlalchemy import desc
 import secrets
@@ -27,9 +28,15 @@ from scapy.all import *
 def home(path=""):
     running_ids = get_running_ids()
     running_ids.sort()
-    running_captures = Capture.query.filter(Capture.id.in_(running_ids)).all()
-    old_captures = Capture.query.filter(~Capture.id.in_(running_ids)).order_by(desc(Capture.date_created)).all()
-    db.session.commit()
+    
+    running_captures = [c for c in current_user.captures if c.id in running_ids]
+    old_captures = [c for c in current_user.captures if c.id not in running_ids]
+    old_captures.sort(key= lambda cap: cap.date_created, reverse=True)
+
+    #following code only made sense before user authetication was implemented
+    #running_captures = Capture.query.filter(Capture.id.in_(running_ids)).all()
+    #old_captures = Capture.query.filter(~Capture.id.in_(running_ids)).order_by(desc(Capture.date_created)).all()
+    #db.session.commit()
     return render_template("home.html", title="Home", running=running_captures, old = old_captures)
 
 @app.route("/help")
@@ -77,6 +84,14 @@ def login():
             flash("Login failed! Please check your username and password!", "danger")
     return render_template("login.html", title="Login", form=form)
 
+
+@app.route("/logout")
+def logout():
+    logout_user()
+
+    flash("Du bist jetzt ausgeloggt!", category="success")
+    return redirect(url_for("login"))
+    
 
 @app.route("/geo/start")
 @login_required
@@ -158,14 +173,6 @@ def capture_download(id):
         flash(f"Folder for capture with id {id} not found", "danger")
     return redirect(url_for("home"))
 
-@app.route("/logout")
-def logout():
-    logout_user()
-
-    flash("Du bist jetzt ausgeloggt!", category="success")
-    return redirect(url_for("login"))
-
-
 def gen_filename(title):
     fn = ""
     while True:
@@ -185,7 +192,8 @@ def new_capture():
         #add to db
         title = form.title.data
         filename = gen_filename(title)
-        cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id)
+        cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id,
+                        gps=form.gpsTracking.data, channel=form.channel.data)
         db.session.add(cap)
         db.session.commit()
 

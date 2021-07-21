@@ -1,29 +1,11 @@
 from threading import Thread, Event
 from time import sleep, time
-import subprocess
 
 from website import app
+from website.interfaces import monitor_iface
 
 from scapy.all import *
 
-
-
-class Interface:
-      
-    def __init__(self, name: str):
-        self.name = name
-        self.mon_name = name + "mon"
-        self.str_monitor_enable  = f"ifconfig {self.name} down; iw dev {self.name} interface add {self.mon_name} type monitor; ifconfig {self.mon_name} down; iw dev {self.mon_name} set type monitor; ifconfig {self.mon_name} up"
-        self.str_monitor_disable = f"iw dev {self.mon_name} del; ifconfig {self.name} up"
-    
-    def enable_monitor_mode(self):
-        subprocess.run(self.str_monitor_enable, shell=True, check=True)
-
-    def disable_monitor_mode(self):
-        subprocess.run(self.str_monitor_disable, shell=True, check=True)
-
-    def set_channel(self, channel: int):
-        subprocess.run(f"sudo iwconfig {self.name} channel {channel}")
 
 class _Capture:
     def __init__(self, id: int, channel: int, interface: str):
@@ -53,7 +35,8 @@ class _Capture:
         #you could create a class to update information such as packet count, beacons, ...
         #use locks
         #entweder Capture von Thread erben oder thread kapseln (vielleicht bessere idee)
-        
+        monitor_iface.set_channel(self.channel)
+
         while True:
             if self._stop.is_set():
                 break
@@ -114,6 +97,7 @@ def test_capture():
 def test_interface():
     iface = Interface("wlan1")
     iface.enable_monitor_mode()
+    iface.set_channel(7)
 
 if __name__ == "__main__":
     test_interface()
