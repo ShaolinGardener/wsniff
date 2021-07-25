@@ -5821,132 +5821,133 @@ F0-25-8E	HUAWEI TECHNOLOGIES CO.,LTD
 28-1B-04	Zalliant LLC
 7C-50-79	Intel Corporate
 80-38-FB	Intel Corporate
-08-B4-B1	Google, Inc.
 34-58-7C	MIRAE INFORMATION TECHNOLOGY CO., LTD.
 AC-82-47	Intel Corporate
+08-B4-B1	Google, Inc.
 74-9A-C0	Cachengo, Inc.
-A4-5E-5A	ACTIVIO Inc.
 5C-56-A4	Wanan Hongsheng Electronic Co.Ltd
+3C-9B-C6	Huawei Device Co., Ltd.
+A4-5E-5A	ACTIVIO Inc.
+00-36-BE	Northwest Towers
+9C-FC-28	Apple, Inc.
 B4-85-E1	Apple, Inc.
 0C-19-F8	Apple, Inc.
 50-1F-C6	Apple, Inc.
-3C-9B-C6	Huawei Device Co., Ltd.
-54-09-10	Apple, Inc.
-9C-FC-28	Apple, Inc.
 CC-69-FA	Apple, Inc.
 10-CE-E9	Apple, Inc.
+54-09-10	Apple, Inc.
 0C-8D-DB	Cisco Meraki
-CC-03-D9	Cisco Meraki
-00-36-BE	Northwest Towers
-4C-F2-02	Xiaomi Communications Co Ltd
 A8-77-E5	SHENZHEN CHUANGWEI-RGB ELECTRONICS CO.,LTD
 10-A4-DA	HUAWEI TECHNOLOGIES CO.,LTD
 38-20-28	HUAWEI TECHNOLOGIES CO.,LTD
 E4-77-27	HUAWEI TECHNOLOGIES CO.,LTD
+4C-F2-02	Xiaomi Communications Co Ltd
 10-51-07	Intel Corporate
+CC-03-D9	Cisco Meraki
 AC-74-C4	Maytronics Ltd.
-84-D6-08	Wingtech Mobile Communications Co., Ltd.
-34-68-93	Tecnovideo Srl
-3C-7A-AA	China Dragon Technology Limited
 6C-47-60	Sunitec Enterprise Co.,Ltd
 18-32-19	EM Microelectronic
-28-D3-EA	Huawei Device Co., Ltd.
-A8-F2-66	Huawei Device Co., Ltd.
+3C-7A-AA	China Dragon Technology Limited
 84-26-7A	GUANGDONG TAIDE ZHILIAN TECHNOLOGY CO.,LTD
 D8-EC-5E	Belkin International Inc.
 84-FD-27	Silicon Laboratories
 CC-9C-3E	Cisco Meraki
 48-29-E4	ZAO NPK Rotek
+34-68-93	Tecnovideo Srl
 FC-A9-DC	Renesas Electronics (Penang) Sdn. Bhd.
 FC-58-4A	xiamenshi c-chip technology co., ltd
-78-65-3B	Shaoxing Ourten Electronics Co., Ltd.
-E0-E6-56	Nethesis  srl
+28-D3-EA	Huawei Device Co., Ltd.
+A8-F2-66	Huawei Device Co., Ltd.
 90-23-B4	New H3C Technologies Co., Ltd
 88-2A-5E	New H3C Technologies Co., Ltd
-84-1E-A3	Sagemcom Broadband SAS
+84-D6-08	Wingtech Mobile Communications Co., Ltd.
 F4-02-23	PAX Computer Technology(Shenzhen) Ltd.
-88-46-04	Xiaomi Communications Co Ltd
-64-6E-E0	Intel Corporate
-04-56-E5	Intel Corporate
+84-1E-A3	Sagemcom Broadband SAS
+78-65-3B	Shaoxing Ourten Electronics Co., Ltd.
 08-10-86	NEC Platforms, Ltd.
 64-79-F0	Intel Corporate
-1C-D1-E0	Cisco Systems, Inc
+E0-E6-56	Nethesis  srl
+64-6E-E0	Intel Corporate
+04-56-E5	Intel Corporate
+88-46-04	Xiaomi Communications Co Ltd
 24-45-6B	Huawei Device Co., Ltd.
 48-38-71	Huawei Device Co., Ltd.
 44-BD-DE	BHTC GmbH
-8C-2A-8E	DongGuan Ramaxel Memory Technology
+1C-D1-E0	Cisco Systems, Inc
 40-44-FD	Realme Chongqing Mobile Telecommunications Corp.,Ltd.
 E8-FD-35	Huawei Device Co., Ltd.
 EC-C5-D2	Huawei Device Co., Ltd.
 B4-60-8C	Fiberhome Telecommunication Technologies Co.,LTD
-B8-14-DB	OHSUNG
+8C-2A-8E	DongGuan Ramaxel Memory Technology
 80-07-1B	VSOLUTION TELECOMMUNICATION TECHNOLOGY CO.,LTD.
-FC-13-F0	Bouffalo Lab (Nanjing) Co., Ltd.
-1C-6E-E6	NHNETWORKS
-08-F6-06	zte corporation
-E8-9E-0C	MAX8USA DISTRIBUTORS INC.
 FC-9C-98	Arlo Technology
-A0-70-B7	HUAWEI TECHNOLOGIES CO.,LTD
-78-B5-54	Huawei Device Co., Ltd.
-68-9E-6A	Huawei Device Co., Ltd.
-28-2B-96	Huawei Device Co., Ltd.
+1C-6E-E6	NHNETWORKS
+FC-13-F0	Bouffalo Lab (Nanjing) Co., Ltd.
+08-F6-06	zte corporation
+B8-14-DB	OHSUNG
 CC-68-B6	TP-Link Corporation Limited
 14-DD-9C	vivo Mobile Communication Co., Ltd.
 64-64-4A	Beijing Xiaomi Mobile Software Co., Ltd
 A4-39-B6	SHENZHEN PEIZHE MICROELECTRONICS CO .LTD
-F4-FB-B8	HUAWEI TECHNOLOGIES CO.,LTD
-CC-33-31	Texas Instruments
+E8-9E-0C	MAX8USA DISTRIBUTORS INC.
 2C-B8-ED	SonicWall
+78-B5-54	Huawei Device Co., Ltd.
+68-9E-6A	Huawei Device Co., Ltd.
+28-2B-96	Huawei Device Co., Ltd.
 C8-9B-AD	Honor Device Co., Ltd.
 C4-5B-BE	Espressif Inc.
+F4-FB-B8	HUAWEI TECHNOLOGIES CO.,LTD
+A0-70-B7	HUAWEI TECHNOLOGIES CO.,LTD
 88-90-09	Juniper Networks
+CC-33-31	Texas Instruments
+C8-C6-4A	Flextronics Tech.(Ind) Pvt Ltd
+BC-FF-4D	Espressif Inc.
+A4-D7-95	Wingtech Mobile Communications Co.,Ltd
+84-AB-26	Tiinlab Corporation
+58-35-6B	TECNO MOBILE LIMITED
 90-B6-7A	Shenzhen Skyworth  Digital  Technology  CO., Ltd
 7C-D9-F4	UAB Teltonika Telematics
-C8-C6-4A	Flextronics Tech.(Ind) Pvt Ltd
-FC-4E-A4	Apple, Inc.
-F4-BE-EC	Apple, Inc.
-BC-FF-4D	Espressif Inc.
-54-E6-1B	Apple, Inc.
 D8-9A-C1	Nokia
 F0-B1-1D	Nokia
 00-04-7D	Motorola Solutions Inc.
-A4-D7-95	Wingtech Mobile Communications Co.,Ltd
-84-AB-26	Tiinlab Corporation
 F8-97-53	Huawei Device Co., Ltd.
 58-94-AE	Huawei Device Co., Ltd.
 B0-3A-CE	Huawei Device Co., Ltd.
+FC-4E-A4	Apple, Inc.
+F4-BE-EC	Apple, Inc.
+F8-4C-DA	HUAWEI TECHNOLOGIES CO.,LTD
+54-E6-1B	Apple, Inc.
 34-AB-95	Espressif Inc.
 C4-91-CF	Luxul
-58-35-6B	TECNO MOBILE LIMITED
-F8-4C-DA	HUAWEI TECHNOLOGIES CO.,LTD
 A8-93-4A	CHONGQING FUGUI ELECTRONICS CO.,LTD.
 A4-05-6E	Tiinlab Corporation
 8C-19-B5	Arcadyan Corporation
 C8-7B-23	Bose Corporation
-78-D9-E9	MOMENTUM IOT
-2C-08-23	Sercomm France Sarl
-30-8E-7A	Shenzhen iComm Semiconductor CO.,LTD
-9C-1C-37	AltoBeam (China) Inc.
 8C-E7-48	Hangzhou Hikvision Digital Technology Co.,Ltd.
+2C-08-23	Sercomm France Sarl
 98-42-65	Sagemcom Broadband SAS
 B8-A3-77	Cisco Systems, Inc
 E4-4E-2D	Cisco Systems, Inc
 00-CC-34	Juniper Networks
 1C-D1-07	Realme Chongqing Mobile Telecommunications Corp.,Ltd.
-10-3D-1C	Intel Corporate
-38-87-D5	Intel Corporate
+30-8E-7A	Shenzhen iComm Semiconductor CO.,LTD
+9C-1C-37	AltoBeam (China) Inc.
+78-D9-E9	MOMENTUM IOT
 80-65-59	EM Microelectronic
 D0-47-C1	Elma Electronic AG
-C0-CC-42	Sichuan Tianyi Comheart Telecom Co.,LTD
+10-3D-1C	Intel Corporate
+38-87-D5	Intel Corporate
 C4-23-60	Intel Corporate
 08-01-0F	Sichuan Tianyi Comheart Telecom Co.,LTD
 18-52-07	Sichuan Tianyi Comheart Telecom Co.,LTD
 E0-C6-3C	Sichuan Tianyi Comheart Telecom Co.,LTD
 DC-21-5C	Intel Corporate
+C0-CC-42	Sichuan Tianyi Comheart Telecom Co.,LTD
 BC-EC-A0	COMPAL INFORMATION (KUNSHAN) CO., LTD.
 F8-BA-E6	Nokia
 A4-55-90	Xiaomi Communications Co Ltd
 58-FD-5D	Hangzhou Xinyun technology Co., Ltd.
+14-89-19	2bps
 9C-FF-C2	AVI Systems GmbH
 44-D8-78	Hui Zhou Gaoshengda Technology Co.,LTD
 A0-D8-07	Huawei Device Co., Ltd.
@@ -11666,31 +11667,28 @@ E4-5E-1B	Google, Inc.
 C4-30-CA	SD Biosensor
 D4-A6-51	Tuya Smart Inc.
 28-05-2E	Dematic Corp
-88-C3-E5	Betop Techonologies
-E4-28-A4	Prama India Private Limited
-94-3A-91	Amazon Technologies Inc.
+8C-EC-7B	Apple, Inc.
 00-0F-A0	CANON KOREA BUSINESS SOLUTIONS INC.
 40-8C-1F	GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
-2C-3F-0B	Cisco Meraki
-80-C5-01	OctoGate IT Security Systems GmbH
 04-F0-3E	Huawei Device Co., Ltd.
 78-E2-2C	Huawei Device Co., Ltd.
-C0-D0-26	Huawei Device Co., Ltd.
 14-D1-9E	Apple, Inc.
 40-C7-11	Apple, Inc.
 5C-70-17	Apple, Inc.
-8C-EC-7B	Apple, Inc.
-00-2D-B3	AMPAK Technology,Inc.
+C0-D0-26	Huawei Device Co., Ltd.
+80-C5-01	OctoGate IT Security Systems GmbH
+88-C3-E5	Betop Techonologies
+2C-3F-0B	Cisco Meraki
+E4-28-A4	Prama India Private Limited
+94-3A-91	Amazon Technologies Inc.
 3C-C7-86	DONGGUAN HUARONG COMMUNICATION TECHNOLOGIES CO.,LTD.
+00-2D-B3	AMPAK Technology,Inc.
+E4-FD-45	Intel Corporate
 28-C8-7C	zte corporation
 14-50-51	SHARP Corporation
 C4-D0-E3	Intel Corporate
-E4-FD-45	Intel Corporate
 18-4C-AE	CONTINENTAL
 98-38-7D	ITRONIC  TECHNOLOGY CO . , LTD .
-C8-D8-84	Universal Electronics, Inc.
-B4-A2-5C	Cambium Networks Limited
-2C-71-FF	Amazon Technologies Inc.
 AC-D6-18	OnePlus Technology (Shenzhen) Co., Ltd
 6C-56-40	BLU Products Inc
 48-78-5E	Amazon Technologies Inc.
@@ -11699,115 +11697,118 @@ AC-D6-18	OnePlus Technology (Shenzhen) Co., Ltd
 A4-7E-36	EM Microelectronic
 B0-5D-D4	ARRIS Group, Inc.
 24-E8-53	LG Innotek
+C8-D8-84	Universal Electronics, Inc.
+B4-A2-5C	Cambium Networks Limited
 30-7C-4A	Huawei Device Co., Ltd.
 2C-CE-1E	Cloudtronics Pty Ltd
+2C-71-FF	Amazon Technologies Inc.
 F0-21-E0	eero inc.
 9C-DB-CB	Wuhan Funshion Online Technologies Co.,Ltd
-64-17-59	Intellivision Holdings, LLC
-50-43-48	ThingsMatrix Inc.
-D8-59-82	HUAWEI TECHNOLOGIES CO.,LTD
-48-B2-5D	HUAWEI TECHNOLOGIES CO.,LTD
 2C-FD-B3	TCL Technoly Electronics(Huizhou).,Ltd
 A4-1B-34	China Mobile Group Device Co.,Ltd.
 80-45-DD	Intel Corporate
+64-17-59	Intellivision Holdings, LLC
+50-43-48	ThingsMatrix Inc.
 C0-D4-6B	Huawei Device Co., Ltd.
 9C-95-67	Huawei Device Co., Ltd.
 58-AE-F1	Fiberhome Telecommunication Technologies Co.,LTD
 A4-7B-1A	Huawei Device Co., Ltd.
-14-7D-05	SERCOMM PHILIPPINES INC
-78-7A-6F	Juice Technology AG
+D8-59-82	HUAWEI TECHNOLOGIES CO.,LTD
+48-B2-5D	HUAWEI TECHNOLOGIES CO.,LTD
 E8-6C-C7	IEEE Registration Authority
 40-24-B2	Sichuan AI-Link Technology Co., Ltd.
 64-0D-22	LG Electronics (Mobile Communications)
+8C-31-E2	DAYOUPLUS
+3C-15-12	Shenzhen Huanhu Technology Co.,Ltd
+14-7D-05	SERCOMM PHILIPPINES INC
+78-7A-6F	Juice Technology AG
+10-39-4E	Hisense broadband multimedia technology Co.,Ltd
 20-A7-F9	SHENZHEN OLANBOA TECHNOLOGY CO., LTD
 C0-06-C3	TP-Link Corporation Limited
-3C-15-12	Shenzhen Huanhu Technology Co.,Ltd
-8C-31-E2	DAYOUPLUS
-10-39-4E	Hisense broadband multimedia technology Co.,Ltd
 D8-D5-B9	Rainforest Automation, Inc.
 04-BA-1C	Huawei Device Co., Ltd.
 7C-3D-2B	Huawei Device Co., Ltd.
+F4-C7-AA	Marvell Semiconductors
 18-C2-41	SonicWall
-58-45-4C	Ericsson AB
-FC-4D-A6	HUAWEI TECHNOLOGIES CO.,LTD
 B4-14-E6	HUAWEI TECHNOLOGIES CO.,LTD
 AC-99-29	HUAWEI TECHNOLOGIES CO.,LTD
-18-48-59	Castlenet Technology Inc.
+FC-4D-A6	HUAWEI TECHNOLOGIES CO.,LTD
+CC-ED-21	Nokia Shanghai Bell Co., Ltd.
+84-23-88	Ruckus Wireless
+00-1A-86	New Wave Design & Verification
+58-45-4C	Ericsson AB
+50-9A-46	Safetrust Inc
+10-D5-61	Tuya Smart Inc.
+F0-A3-B2	Hui Zhou Gaoshengda Technology Co.,LTD
 14-51-7E	New H3C Technologies Co., Ltd
 08-3A-38	New H3C Technologies Co., Ltd
-70-F0-88	Nintendo Co.,Ltd
-84-23-88	Ruckus Wireless
-F4-C7-AA	Marvell Semiconductors
-F8-AB-E5	shenzhen worldelite electronics co., LTD
+08-BB-3C	Flextronics Tech.(Ind) Pvt Ltd
 E0-DB-D1	Technicolor CH USA Inc.
-CC-ED-21	Nokia Shanghai Bell Co., Ltd.
-10-D5-61	Tuya Smart Inc.
-00-1A-86	New Wave Design & Verification
-50-9A-46	Safetrust Inc
+18-48-59	Castlenet Technology Inc.
+70-F0-88	Nintendo Co.,Ltd
+F0-4A-02	Cisco Systems, Inc
+F8-AB-E5	shenzhen worldelite electronics co., LTD
 D0-CF-D8	Huizhou Boshijie Technology Co.,Ltd
 84-C7-8F	APS Networks GmbH
-F0-A3-B2	Hui Zhou Gaoshengda Technology Co.,LTD
-08-BB-3C	Flextronics Tech.(Ind) Pvt Ltd
+9C-76-0E	Apple, Inc.
+94-EA-32	Apple, Inc.
+50-F4-EB	Apple, Inc.
+28-C7-09	Apple, Inc.
 2C-BE-EB	Nothing Technology Limited
-F0-4A-02	Cisco Systems, Inc
 74-09-AC	Quext, LLC
-F0-01-6E	Tianyi Telecom Terminals Company Limited
+B8-81-FA	Apple, Inc.
 EC-0B-AE	Hangzhou BroadLink Technology Co.,Ltd
 80-25-11	ITEL MOBILE LIMITED
-E8-A6-60	HUAWEI TECHNOLOGIES CO.,LTD
 CC-24-2E	Shenzhen SuperElectron Technology Co.,Ltd.
+F0-01-6E	Tianyi Telecom Terminals Company Limited
 08-2F-E9	HUAWEI TECHNOLOGIES CO.,LTD
 98-48-74	HUAWEI TECHNOLOGIES CO.,LTD
 1C-A6-81	HUAWEI TECHNOLOGIES CO.,LTD
-B8-81-FA	Apple, Inc.
-9C-76-0E	Apple, Inc.
-94-EA-32	Apple, Inc.
+E8-A6-60	HUAWEI TECHNOLOGIES CO.,LTD
 C8-BF-FE	Huawei Device Co., Ltd.
 08-2E-36	Huawei Device Co., Ltd.
-50-F4-EB	Apple, Inc.
-28-C7-09	Apple, Inc.
+A4-35-2D	TRIZ Networks corp.
+04-9F-81	NETSCOUT SYSTEMS INC
+00-80-8C	NETSCOUT SYSTEMS INC
 38-02-DE	Sercomm Corporation.
+00-1F-92	Motorola Solutions Inc.
 5C-62-5A	CANON INC.
 7C-0A-3F	Samsung Electronics Co.,Ltd
 08-AA-89	zte corporation
-A4-35-2D	TRIZ Networks corp.
 04-D6-0E	FUNAI ELECTRIC CO., LTD.
-04-9F-81	NETSCOUT SYSTEMS INC
-00-80-8C	NETSCOUT SYSTEMS INC
-00-1F-92	Motorola Solutions Inc.
+60-57-7D	eero inc.
+78-F2-35	Sichuan AI-Link Technology Co., Ltd.
 00-23-BB	Accretech SBS, Inc.
 B0-C9-52	GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
-F4-41-9E	Huawei Device Co., Ltd.
-90-F9-B7	HUAWEI TECHNOLOGIES CO.,LTD
-F4-45-88	HUAWEI TECHNOLOGIES CO.,LTD
+C8-13-8B	Shenzhen Skyworth  Digital  Technology  CO., Ltd
 C8-BB-81	Huawei Device Co., Ltd.
 1C-47-2F	Huawei Device Co., Ltd.
 20-5E-64	Huawei Device Co., Ltd.
-60-57-7D	eero inc.
-C8-13-8B	Shenzhen Skyworth  Digital  Technology  CO., Ltd
-78-F2-35	Sichuan AI-Link Technology Co., Ltd.
+F4-41-9E	Huawei Device Co., Ltd.
+90-F9-B7	HUAWEI TECHNOLOGIES CO.,LTD
+F4-45-88	HUAWEI TECHNOLOGIES CO.,LTD
 F4-4E-E3	Intel Corporate
 D0-E0-42	Cisco Systems, Inc
+F4-6F-A4	Physik Instrumente GmbH & Co. KG
 3C-37-12	AVM Audiovisuelles Marketing und Computersysteme GmbH
+CC-0D-E7	B METERS S.R.L.
 80-B6-55	Intel Corporate
 0C-CB-0C	iSYS RTS GmbH
 44-56-E2	Sichuan Tianyi Comheart Telecom Co.,LTD
 54-AE-D2	CSL Dualcom Ltd
-F4-6F-A4	Physik Instrumente GmbH & Co. KG
+4C-D3-AF	HMD Global Oy
 C4-74-69	BT9
 64-5D-92	Sichuan Tianyi Comheart Telecom Co.,LTD
 9C-61-21	Sichuan Tianyi Comheart Telecom Co.,LTD
 E0-4F-BD	Sichuan Tianyi Comheart Telecom Co.,LTD
+58-2F-F7	Sagemcom Broadband SAS
 40-F4-20	Sichuan Tianyi Comheart Telecom Co.,LTD
 CC-A2-60	Sichuan Tianyi Comheart Telecom Co.,LTD
 AC-E7-7B	Sichuan Tianyi Comheart Telecom Co.,LTD
-4C-D3-AF	HMD Global Oy
-C8-51-42	Samsung Electronics Co.,Ltd
-CC-0D-E7	B METERS S.R.L.
 5C-A1-76	Sichuan Tianyi Comheart Telecom Co.,LTD
+C8-51-42	Samsung Electronics Co.,Ltd
 10-E4-C2	Samsung Electronics Co.,Ltd
 0C-8D-CA	Samsung Electronics Co.,Ltd
-58-2F-F7	Sagemcom Broadband SAS
 B0-27-CF	Extreme Networks, Inc.
 68-3A-48	SAMJIN Co., Ltd.
 8C-FD-15	Imagine Marketing Private Limited
@@ -14670,7 +14671,6 @@ C8-93-83	Embedded Automation, Inc.
 78-A0-51	iiNet Labs Pty Ltd
 80-4F-58	ThinkEco, Inc.
 04-75-F5	CSST
-8C-4D-EA	Cerio Corporation
 24-BA-30	Technical Consumer Products, Inc.
 18-8E-D5	TP Vision Belgium N.V. - innovation site Brugge
 E8-0C-38	DAEYOUNG INFORMATION SYSTEM CO., LTD
@@ -17620,48 +17620,48 @@ C4-39-60	GD Midea Air-Conditioning Equipment Co.,Ltd.
 70-61-BE	Wistron Neweb Corporation
 34-8A-12	Aruba, a Hewlett Packard Enterprise Company
 84-D3-43	Calix Inc.
-D8-47-BB	Huawei Device Co., Ltd.
-C4-14-11	Apple, Inc.
-CC-C9-5D	Apple, Inc.
 38-B5-D3	SecuWorks
 34-31-8F	Apple, Inc.
+C4-14-11	Apple, Inc.
+CC-C9-5D	Apple, Inc.
+D8-47-BB	Huawei Device Co., Ltd.
+34-56-FE	Cisco Meraki
+B8-07-56	Cisco Meraki
 44-6F-D8	IEEE Registration Authority
-C8-94-02	CHONGQING FUGUI ELECTRONICS CO.,LTD.
-7C-B9-4C	Bouffalo Lab (Nanjing) Co., Ltd.
 DC-15-C8	AVM Audiovisuelles Marketing und Computersysteme GmbH
 6C-D6-30	Rootous System Co.,Ltd
-B8-07-56	Cisco Meraki
+C8-94-02	CHONGQING FUGUI ELECTRONICS CO.,LTD.
+7C-B9-4C	Bouffalo Lab (Nanjing) Co., Ltd.
 C8-33-E5	HUAWEI TECHNOLOGIES CO.,LTD
-34-56-FE	Cisco Meraki
-B8-44-AE	TCT mobile ltd
+0C-8C-69	Shenzhen elink smart Co., ltd
 E4-F7-5B	ARRIS Group, Inc.
 F8-79-0A	ARRIS Group, Inc.
-0C-CF-89	SHENZHEN BILIAN ELECTRONIC CO.，LTD
-0C-8C-69	Shenzhen elink smart Co., ltd
+1C-93-7C	ARRIS Group, Inc.
+B8-44-AE	TCT mobile ltd
 D8-BB-C1	Micro-Star INTL CO., LTD.
 AC-5A-FC	Intel Corporate
-1C-93-7C	ARRIS Group, Inc.
 58-FC-20	Altice Labs S.A.
 58-FD-20	Systemhouse Solutions AB
 04-D6-F4	GD Midea Air-Conditioning Equipment Co.,Ltd.
+0C-CF-89	SHENZHEN BILIAN ELECTRONIC CO.，LTD
 04-90-81	Pensando Systems, Inc.
 4C-79-6E	Intel Corporate
+F0-9E-4A	Intel Corporate
 98-AD-1D	Huawei Device Co., Ltd.
 F8-AA-3F	DWnet Technologies(Suzhou) Corporation
 00-68-2B	Huawei Device Co., Ltd.
-F0-9E-4A	Intel Corporate
 F0-77-C3	Intel Corporate
 24-9A-D8	YEALINK(XIAMEN) NETWORK TECHNOLOGY CO.,LTD.
 D8-5E-D3	GIGA-BYTE TECHNOLOGY CO.,LTD.
 00-E4-21	Sony Interactive Entertainment Inc.
 CC-DB-04	DataRemote Inc.
 E8-9F-39	Nokia
-34-73-5A	Dell Inc.
+B0-22-7A	HP Inc.
 8C-AA-CE	Xiaomi Communications Co Ltd
 98-1A-35	HUAWEI TECHNOLOGIES CO.,LTD
 80-34-28	Microchip Technology Inc.
 28-EF-01	Amazon Technologies Inc.
-B0-22-7A	HP Inc.
+34-73-5A	Dell Inc.
 60-A7-51	Huawei Device Co., Ltd.
 10-2B-41	Samsung Electronics Co.,Ltd
 34-4A-C3	HuNan ZiKun Information Technology CO., Ltd
@@ -17677,8 +17677,6 @@ F8-45-C4	Shenzhen Netforward Micro-Electronic Co., Ltd.
 78-10-53	China Mobile Group Device Co.,Ltd.
 9C-4F-5F	TAP Sound System
 00-08-0C	VDA Group S.p.a.
-D0-97-FE	Realme Chongqing Mobile Telecommunications Corp.,Ltd.
-84-3A-5B	Inventec(Chongqing) Corporation
 54-49-DF	Peloton Interactive, Inc
 18-2A-57	HUAWEI TECHNOLOGIES CO.,LTD
 F8-3E-95	HUAWEI TECHNOLOGIES CO.,LTD
@@ -17691,69 +17689,73 @@ CC-32-96	Huawei Device Co., Ltd.
 B0-3D-C2	Wasp artificial intelligence(Shenzhen) Co.,ltd
 C8-4D-34	LIONS Taiwan Technology Inc.
 44-6F-F8	Dyson Limited
-6C-1B-3F	MiraeSignal Co., Ltd
+D0-97-FE	Realme Chongqing Mobile Telecommunications Corp.,Ltd.
+84-3A-5B	Inventec(Chongqing) Corporation
 28-AF-FD	Cisco Systems, Inc
+6C-1B-3F	MiraeSignal Co., Ltd
 9C-76-13	Ring LLC
 44-9B-C1	HUAWEI TECHNOLOGIES CO.,LTD
 20-25-D2	Fiberhome Telecommunication Technologies Co.,LTD
 28-F4-9B	LEETEK
 18-42-D4	Wuhan Hosan Telecommunication Technology Co.,Ltd
 A8-63-7D	D-Link International
-2C-43-BE	Sunnovo International Limited
-58-10-B7	Infinix mobility limited
 B0-24-91	Huawei Device Co., Ltd.
 98-75-1A	Huawei Device Co., Ltd.
-1C-91-80	Apple, Inc.
-4C-B9-10	Apple, Inc.
 B4-89-01	HUAWEI TECHNOLOGIES CO.,LTD
 E0-92-5C	Apple, Inc.
+4C-B9-10	Apple, Inc.
+1C-91-80	Apple, Inc.
+2C-43-BE	Sunnovo International Limited
+58-10-B7	Infinix mobility limited
+4C-77-66	SHENZHEN MERCURY COMMUNICATION TECHNOLOGIES CO.,LTD.
+78-E3-6D	Espressif Inc.
+1C-A0-EF	IEEE Registration Authority
+00-18-85	Motorola Solutions Inc.
+D8-E7-2B	NETSCOUT SYSTEMS INC
+34-86-5D	Espressif Inc.
+14-5A-FC	Liteon Technology Corporation
 EC-15-3D	Beijing Yaxunhongda Technology Co., Ltd.
 D8-A3-5C	Samsung Electronics Co.,Ltd
 C0-92-96	zte corporation
 50-E2-4E	zte corporation
-4C-77-66	SHENZHEN MERCURY COMMUNICATION TECHNOLOGIES CO.,LTD.
-78-E3-6D	Espressif Inc.
-14-5A-FC	Liteon Technology Corporation
-1C-A0-EF	IEEE Registration Authority
-00-18-85	Motorola Solutions Inc.
-D8-E7-2B	NETSCOUT SYSTEMS INC
 18-BF-B3	Samsung Electronics Co., Ltd., Memory Division
 2C-8D-B1	Intel Corporate
 58-6C-25	Intel Corporate
 08-2C-ED	Technity Solutions Inc.
-34-86-5D	Espressif Inc.
-B4-E3-F9	Silicon Laboratories
-A4-9B-CD	Cisco Systems, Inc
 04-27-28	Microsoft Corporation
 20-66-CF	FREEBOX SAS
 2C-C8-1B	Routerboard.com
-88-E0-56	HUAWEI TECHNOLOGIES CO.,LTD
-D0-7D-33	Huawei Device Co., Ltd.
-C0-E1-BE	HUAWEI TECHNOLOGIES CO.,LTD
-D0-35-E5	EM Microelectronic
-90-96-F3	BUFFALO.INC
 54-0E-58	GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
 5C-64-8E	Zyxel Communications Corporation
+D0-35-E5	EM Microelectronic
+90-96-F3	BUFFALO.INC
 30-E3-96	Huawei Device Co., Ltd.
-C4-A1-51	Sichuan Tianyi Comheart Telecom Co.,LTD
-78-47-E3	Sichuan Tianyi Comheart Telecom Co.,LTD
-EC-F8-EB	Sichuan Tianyi Comheart Telecom Co.,LTD
+D0-7D-33	Huawei Device Co., Ltd.
+C0-E1-BE	HUAWEI TECHNOLOGIES CO.,LTD
+88-E0-56	HUAWEI TECHNOLOGIES CO.,LTD
+B4-E3-F9	Silicon Laboratories
+A4-9B-CD	Cisco Systems, Inc
 F0-92-B4	Sichuan Tianyi Comheart Telecom Co.,LTD
-F4-4E-38	Olibra LLC
 2C-63-73	Sichuan Tianyi Comheart Telecom Co.,LTD
+F4-4E-38	Olibra LLC
+EC-F8-EB	Sichuan Tianyi Comheart Telecom Co.,LTD
 A0-D7-22	Samsung Electronics Co.,Ltd
 50-49-B0	Samsung Electronics Co.,Ltd
 E8-05-DC	Verifone Inc.
-10-7B-CE	Nokia
+C4-A1-51	Sichuan Tianyi Comheart Telecom Co.,LTD
+78-47-E3	Sichuan Tianyi Comheart Telecom Co.,LTD
 C8-05-9E	Hefei Symboltek Co.,Ltd
 34-FC-A1	Micronet union Technology(Chengdu)Co., Ltd.
 28-97-B8	myenergi Ltd
 48-06-2B	Private
 B0-A7-B9	TP-Link Corporation Limited
-6C-5A-B0	TP-Link Corporation Limited
 4C-F5-DC	Hangzhou Hikvision Digital Technology Co.,Ltd.
 60-E6-F0	Wistron Neweb Corporation
 20-1F-3B	Google, Inc.
+10-7B-CE	Nokia
+6C-5A-B0	TP-Link Corporation Limited
+C8-F5-D6	IEEE Registration Authority
+8C-4D-EA	Cerio Corporation
 F8-D0-27	Seiko Epson Corporation
 5C-66-6C	GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
 4C-4B-F9	IEEE Registration Authority
@@ -23513,35 +23515,35 @@ F0-F5-64	Samsung Electronics Co.,Ltd
 64-13-AB	HUAWEI TECHNOLOGIES CO.,LTD
 B0-60-88	Intel Corporate
 0C-73-29	Sercomm Corporation.
-5C-C3-36	ittim
 FC-04-1C	GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
 F4-D4-88	Apple, Inc.
 68-2F-67	Apple, Inc.
 00-3D-E1	Huawei Device Co., Ltd.
 F0-6F-46	Ubiik
 50-ED-3C	Apple, Inc.
+5C-C3-36	ittim
 FC-40-09	zte corporation
-24-A6-5E	zte corporation
-50-98-39	Xiaomi Communications Co Ltd
 48-00-7D	DTS ELEKTRONIK SAN. TIC. LTD. STI.
 30-B1-B5	Arcadyan Corporation
 64-07-F6	Samsung Electronics Co.,Ltd
 E0-CB-BC	Cisco Meraki
 68-3A-1E	Cisco Meraki
+24-A6-5E	zte corporation
+50-98-39	Xiaomi Communications Co Ltd
+70-DF-F7	ARRIS Group, Inc.
+00-E0-DF	DZS GmbH
+84-90-00	Arnold&Richter Cine Technik GmbH & Co. Betriebs KG
+E4-C9-0B	Radwin
+98-27-82	IEEE Registration Authority
 D8-EC-E5	Zyxel Communications Corporation
 C4-70-AB	Ruijie Networks Co.,LTD
 CC-6B-1E	CLOUD NETWORK TECHNOLOGY SINGAPORE PTE. LTD.
 F0-D0-8C	TCT mobile ltd
-84-90-00	Arnold&Richter Cine Technik GmbH & Co. Betriebs KG
-30-F9-4B	Universal Electronics, Inc.
-B4-8A-5F	Juniper Networks
-70-DF-F7	ARRIS Group, Inc.
-00-E0-DF	DZS GmbH
 E0-E8-BB	Unicom Vsens Telecommunications Co., Ltd.
-E4-C9-0B	Radwin
-98-27-82	IEEE Registration Authority
 38-A0-67	Nokia Solutions and Networks GmbH & Co. KG
 CC-81-2A	vivo Mobile Communication Co., Ltd.
+30-F9-4B	Universal Electronics, Inc.
+B4-8A-5F	Juniper Networks
 7C-1B-93	Huawei Device Co., Ltd.
 DC-2D-3C	Huawei Device Co., Ltd.
 04-11-19	IEEE Registration Authority
@@ -23550,115 +23552,117 @@ E4-55-A8	Cisco Meraki
 C4-F1-74	eero inc.
 28-D0-EA	Intel Corporate
 E0-0C-E5	HUAWEI TECHNOLOGIES CO.,LTD
-28-41-EC	HUAWEI TECHNOLOGIES CO.,LTD
-7C-00-4D	HUAWEI TECHNOLOGIES CO.,LTD
 04-D3-20	ITEL MOBILE LIMITED
 1C-99-57	Intel Corporate
 F4-6B-8C	Hon Hai Precision Ind. Co., Ltd.
 FC-34-97	ASUSTek COMPUTER INC.
 84-7A-B6	AltoBeam (China) Inc.
-78-A6-A0	Hangzhou Ezviz Software Co.,Ltd.
-48-51-CF	Intelbras
-4C-5D-3C	Cisco Systems, Inc
-34-73-2D	Cisco Systems, Inc
 04-7B-CB	Universal Global Scientific Industrial Co., Ltd.
+28-41-EC	HUAWEI TECHNOLOGIES CO.,LTD
+7C-00-4D	HUAWEI TECHNOLOGIES CO.,LTD
+78-A6-A0	Hangzhou Ezviz Software Co.,Ltd.
 8C-34-46	Huawei Device Co., Ltd.
 80-47-86	Samsung Electronics Co.,Ltd
 D4-47-5A	ScreenBeam, Inc.
 E4-41-64	Nokia
-34-E9-FE	Metis Co., Ltd.
-AC-13-9C	Adtran Inc
-A4-CE-DA	Arcadyan Corporation
-8C-43-61	Hailo Digital Hub GmbH & Co. KG
+48-51-CF	Intelbras
+4C-5D-3C	Cisco Systems, Inc
+34-73-2D	Cisco Systems, Inc
 54-72-5E	UNIONMAN TECHNOLOGY CO.,LTD
 98-C3-D2	Ningbo Sanxing Medical Electric Co.,Ltd
+8C-43-61	Hailo Digital Hub GmbH & Co. KG
 24-5D-FC	IEEE Registration Authority
 9C-82-81	vivo Mobile Communication Co., Ltd.
 48-7E-48	Earda Technologies co Ltd
-E0-E3-7C	Huawei Device Co., Ltd.
-24-18-C6	HUNAN FN-LINK TECHNOLOGY LIMITED
-30-78-D3	Virgilant Technologies Ltd.
-60-18-95	Dell Inc.
-E8-EA-4D	HUAWEI TECHNOLOGIES CO.,LTD
-3C-FF-D8	HUAWEI TECHNOLOGIES CO.,LTD
-4C-61-7E	Huawei Device Co., Ltd.
-B4-10-7B	Texas Instruments
+AC-13-9C	Adtran Inc
+A4-CE-DA	Arcadyan Corporation
+34-E9-FE	Metis Co., Ltd.
 64-97-14	eero inc.
 CC-86-EC	Silicon Laboratories
-40-41-01	Rockwell Automation
-7C-55-A7	Kastle Systems
-40-BE-EE	Shenzhen Yunding Information Technology Co.,Ltd
-A4-4C-62	Hangzhou Microimage Software Co., Ltd
+60-18-95	Dell Inc.
+30-78-D3	Virgilant Technologies Ltd.
+4C-61-7E	Huawei Device Co., Ltd.
+E0-E3-7C	Huawei Device Co., Ltd.
+E8-EA-4D	HUAWEI TECHNOLOGIES CO.,LTD
+3C-FF-D8	HUAWEI TECHNOLOGIES CO.,LTD
+24-18-C6	HUNAN FN-LINK TECHNOLOGY LIMITED
 FC-E8-06	Edifier International
+B4-10-7B	Texas Instruments
+7C-55-A7	Kastle Systems
+A4-4C-62	Hangzhou Microimage Software Co., Ltd
+40-BE-EE	Shenzhen Yunding Information Technology Co.,Ltd
+40-41-01	Rockwell Automation
 F4-C7-95	WEY Technology AG
 44-B4-62	Flextronics Tech.(Ind) Pvt Ltd
 F8-D4-78	Flextronics Tech.(Ind) Pvt Ltd
 50-C2-ED	GN Audio A/S
 90-A8-22	Amazon Technologies Inc.
 74-AD-98	Cisco Systems, Inc
-84-8C-8D	Apple, Inc.
-0C-5C-B5	IEEE Registration Authority
 E8-4F-25	Murata Manufacturing Co., Ltd.
 04-25-E0	Taicang T&W Electronics
+38-52-47	Huawei Device Co., Ltd.
+C0-DC-D7	Huawei Device Co., Ltd.
+B8-2A-A9	Apple, Inc.
+78-64-C0	Apple, Inc.
+E8-1C-D8	Apple, Inc.
+3C-06-30	Apple, Inc.
+84-8C-8D	Apple, Inc.
+0C-E4-41	Apple, Inc.
+0C-5C-B5	IEEE Registration Authority
 30-85-EB	Fiberhome Telecommunication Technologies Co.,LTD
 84-06-FA	Fiberhome Telecommunication Technologies Co.,LTD
 B8-D4-3E	vivo Mobile Communication Co., Ltd.
-C0-DC-D7	Huawei Device Co., Ltd.
-30-37-B3	HUAWEI TECHNOLOGIES CO.,LTD
-14-CB-19	HP Inc.
-0C-E4-41	Apple, Inc.
-B8-2A-A9	Apple, Inc.
-78-64-C0	Apple, Inc.
 74-15-75	Xiaomi Communications Co Ltd
-38-52-47	Huawei Device Co., Ltd.
-E8-1C-D8	Apple, Inc.
-3C-06-30	Apple, Inc.
+30-37-B3	HUAWEI TECHNOLOGIES CO.,LTD
+B0-4F-13	Dell Inc.
+14-CB-19	HP Inc.
+C4-BC-D7	New Ryatek
+C0-AE-FD	Shenzhen HC-WLAN Technology Co.,Ltd
 F4-02-28	SAMSUNG ELECTRO-MECHANICS(THAILAND)
 0C-83-CC	Alpha Networks Inc.
 EC-B9-70	Ruijie Networks Co.,LTD
 30-83-98	Espressif Inc.
 F8-89-D2	CLOUD NETWORK TECHNOLOGY SINGAPORE PTE. LTD.
+DC-87-CB	Beijing Perfectek Technologies Co., Ltd.
 10-27-F5	TP-Link Corporation Limited
-B0-4F-13	Dell Inc.
 C0-4B-13	WonderSound Technology Co., Ltd
 9C-7F-81	SHENZHEN FAST TECHNOLOGIES CO.,LTD
-C4-BC-D7	New Ryatek
-C0-AE-FD	Shenzhen HC-WLAN Technology Co.,Ltd
 20-6A-94	Hitron Technologies. Inc
 30-95-87	HUNAN FN-LINK TECHNOLOGY LIMITED
-DC-87-CB	Beijing Perfectek Technologies Co., Ltd.
+28-53-4E	HUAWEI TECHNOLOGIES CO.,LTD
+5C-B0-0A	HUAWEI TECHNOLOGIES CO.,LTD
 10-2D-41	Sichuan AI-Link Technology Co., Ltd.
 64-27-53	Huawei Device Co., Ltd.
 7C-F6-66	Tuya Smart Inc.
-28-53-4E	HUAWEI TECHNOLOGIES CO.,LTD
-5C-B0-0A	HUAWEI TECHNOLOGIES CO.,LTD
-00-C0-6A	Zahner-Elektrik Ingeborg Zahner-Schiller GmbH & Co. KG.
-20-1E-88	Intel Corporate
 20-CE-2A	IEEE Registration Authority
-58-13-D3	Gemtek Technology Co., Ltd.
 00-E5-E4	Sichuan Tianyi Comheart Telecom Co.,LTD
 14-69-A2	Sichuan Tianyi Comheart Telecom Co.,LTD
 04-6B-25	Sichuan Tianyi Comheart Telecom Co.,LTD
+00-C0-6A	Zahner-Elektrik Ingeborg Zahner-Schiller GmbH & Co. KG.
+20-1E-88	Intel Corporate
+54-66-F9	ConMet
 10-12-B4	Sichuan Tianyi Comheart Telecom Co.,LTD
+58-13-D3	Gemtek Technology Co., Ltd.
 9C-32-A9	Sichuan Tianyi Comheart Telecom Co.,LTD
 68-26-2A	Sichuan Tianyi Comheart Telecom Co.,LTD
 B8-22-4F	Sichuan Tianyi Comheart Telecom Co.,LTD
 90-86-74	Sichuan Tianyi Comheart Telecom Co.,LTD
-88-C9-B3	IEEE Registration Authority
-C8-BD-69	Samsung Electronics Co.,Ltd
 64-3A-B1	Sichuan Tianyi Comheart Telecom Co.,LTD
 44-BA-46	Sichuan Tianyi Comheart Telecom Co.,LTD
+C8-BD-69	Samsung Electronics Co.,Ltd
 A8-76-50	Samsung Electronics Co.,Ltd
 54-D1-7D	Samsung Electronics Co.,Ltd
 60-3A-AF	Samsung Electronics Co.,Ltd
+88-C9-B3	IEEE Registration Authority
 80-48-A5	Sichuan Tianyi Comheart Telecom Co.,LTD
-54-66-F9	ConMet
-58-91-53	China Mobile IOT Company Limited
 9C-5A-81	Xiaomi Communications Co Ltd
-B8-13-32	AMPAK Technology,Inc.
+58-91-53	China Mobile IOT Company Limited
 98-7D-DD	China Mobile Group Device Co.,Ltd.
-AC-97-6C	Greenliant
+B8-13-32	AMPAK Technology,Inc.
 2C-EA-DC	ASKEY COMPUTER CORP
+AC-97-6C	Greenliant
+38-14-28	Dell Inc.
+AC-E1-4F	Autonomic Controls, Inc.
 7C-8A-E1	COMPAL INFORMATION (KUNSHAN) CO., LTD.
 54-E4-A9	BHR Tech GmbH
 20-80-58	Ciena Corporation
@@ -29429,18 +29433,17 @@ B8-8D-F1	Nanjing BigFish Semiconductor Co., Ltd.
 40-DE-17	Shenzhen Lanfeng Times Industrial Co.,Ltd.
 F0-16-28	Technicolor (China) Technology Co., Ltd.
 68-57-2D	Tuya Smart Inc.
-08-A7-C0	Technicolor CH USA Inc.
 28-5B-0C	Sichuan Jiuzhou Electronic Technology Co., Ltd.
 14-89-CB	HUAWEI TECHNOLOGIES CO.,LTD
 6C-26-36	HUAWEI TECHNOLOGIES CO.,LTD
+58-56-C2	HUAWEI TECHNOLOGIES CO.,LTD
+A0-36-79	HUAWEI TECHNOLOGIES CO.,LTD
 48-68-4A	Intel Corporate
 BC-F1-71	Intel Corporate
 84-71-6A	Huawei Device Co., Ltd.
 48-8C-63	Huawei Device Co., Ltd.
 70-DD-EF	Huawei Device Co., Ltd.
 54-A6-DB	Huawei Device Co., Ltd.
-58-56-C2	HUAWEI TECHNOLOGIES CO.,LTD
-A0-36-79	HUAWEI TECHNOLOGIES CO.,LTD
 B8-D6-F6	HUAWEI TECHNOLOGIES CO.,LTD
 2C-52-AF	HUAWEI TECHNOLOGIES CO.,LTD
 14-98-77	Apple, Inc.
@@ -29449,117 +29452,118 @@ B0-E5-F9	Apple, Inc.
 AC-17-C8	Cisco Meraki
 98-18-88	Cisco Meraki
 4C-C8-A1	Cisco Meraki
+08-A7-C0	Technicolor CH USA Inc.
 58-FB-96	Ruckus Wireless
 F0-62-5A	Realme Chongqing Mobile Telecommunications Corp.,Ltd.
 64-E0-AB	UNIONMAN TECHNOLOGY CO.,LTD
 AC-23-16	Mist Systems, Inc.
 2C-00-AB	ARRIS Group, Inc.
+50-97-07	Xiamen Paperang Technology Co.,Ltd.
 3C-E3-6B	Zhejiang Dahua Technology Co., Ltd.
+1C-87-E3	TECNO MOBILE LIMITED
+20-B7-30	TeconGroup, Inc
+98-3F-66	Wuhan Funshion Online Technologies Co.,Ltd
+EC-63-D7	Intel Corporate
 20-3B-69	vivo Mobile Communication Co., Ltd.
 5C-17-20	Huawei Device Co., Ltd.
-98-3F-66	Wuhan Funshion Online Technologies Co.,Ltd
 60-5E-4F	Huawei Device Co., Ltd.
 1C-E6-AD	Huawei Device Co., Ltd.
-50-97-07	Xiamen Paperang Technology Co.,Ltd.
-EC-63-D7	Intel Corporate
 14-85-7F	Intel Corporate
-7C-9F-07	CIG SHANGHAI CO LTD
-1C-87-E3	TECNO MOBILE LIMITED
 94-E2-3C	Intel Corporate
-20-B7-30	TeconGroup, Inc
+7C-9F-07	CIG SHANGHAI CO LTD
 48-88-99	Shenzhen SuperElectron Technology Co.,Ltd.
 DC-B1-31	SHENZHEN HUARUIAN TECHNOLOGY CO.,LTD
-84-3B-10	Lv switch Inc.
 94-A4-F9	HUAWEI TECHNOLOGIES CO.,LTD
 6C-34-91	HUAWEI TECHNOLOGIES CO.,LTD
 E8-4D-74	HUAWEI TECHNOLOGIES CO.,LTD
 CC-89-5E	HUAWEI TECHNOLOGIES CO.,LTD
+84-3B-10	Lv switch Inc.
 80-44-FD	China Mobile (Hangzhou) Information Technology Co., Ltd.
-F4-6A-D7	Microsoft Corporation
-48-1F-2D	Shenzhen Jie Shi Lian Industrial Co.,LTD
 8C-73-A0	Fiberhome Telecommunication Technologies Co.,LTD
-14-09-B4	zte corporation
-10-10-81	zte corporation
 78-CF-F9	Huawei Device Co., Ltd.
 A8-E8-1E	ATW TECHNOLOGY, INC.
 F8-85-F9	Calix Inc.
+F4-6A-D7	Microsoft Corporation
+48-1F-2D	Shenzhen Jie Shi Lian Industrial Co.,LTD
+14-09-B4	zte corporation
+10-10-81	zte corporation
 CC-88-C7	Aruba, a Hewlett Packard Enterprise Company
-F8-1A-2B	Google, Inc.
 F4-A8-0D	Wistron InfoComm(Kunshan)Co.,Ltd.
 08-A1-89	Hangzhou Hikvision Digital Technology Co.,Ltd.
-80-F3-EF	Facebook Technologies, LLC
 3C-A8-ED	smart light technology
 04-C2-9B	Aura Home, Inc.
 14-3B-42	Realfit(Shenzhen) Intelligent Technology Co., Ltd
-EC-2E-98	AzureWave Technology Inc.
-38-F3-AB	LCFC(HeFei) Electronics Technology co., ltd
+F8-1A-2B	Google, Inc.
 50-AE-86	Linkintec Co., Ltd
 38-B3-F7	Huawei Device Co., Ltd.
 84-E9-86	Huawei Device Co., Ltd.
 AC-1F-0F	Texas Instruments
 74-D2-85	Texas Instruments
+80-F3-EF	Facebook Technologies, LLC
 60-15-92	IEEE Registration Authority
 10-C9-CA	Ace Technology Corp.
 BC-FA-B8	Guangzhou Shiyuan Electronic Technology Company Limited
-D4-77-98	Cisco Systems, Inc
 A0-4A-5E	Microsoft Corporation
 EC-02-73	Aruba, a Hewlett Packard Enterprise Company
-F4-B1-C2	Zhejiang Dahua Technology Co., Ltd.
-A4-DA-D4	Yamato Denki Co.,Ltd.
-10-94-97	Logitech Hong Kong
+38-F3-AB	LCFC(HeFei) Electronics Technology co., ltd
+EC-2E-98	AzureWave Technology Inc.
+D4-77-98	Cisco Systems, Inc
 00-14-1D	KEBA Industrial Automation Germany GmbH
+A4-DA-D4	Yamato Denki Co.,Ltd.
+F4-B1-C2	Zhejiang Dahua Technology Co., Ltd.
+F0-2F-4B	Apple, Inc.
+40-E6-4B	Apple, Inc.
+94-3C-C6	Espressif Inc.
+10-94-97	Logitech Hong Kong
+B4-FA-48	Apple, Inc.
+8C-D9-D6	Xiaomi Communications Co Ltd
+60-C5-E6	Skullcandy
 E0-DA-90	HUAWEI TECHNOLOGIES CO.,LTD
 A4-A4-6B	HUAWEI TECHNOLOGIES CO.,LTD
 C0-47-54	vivo Mobile Communication Co., Ltd.
 A0-D7-A0	Huawei Device Co., Ltd.
-40-E6-4B	Apple, Inc.
-B4-FA-48	Apple, Inc.
-94-3C-C6	Espressif Inc.
 8C-83-FC	Axioma Metering UAB
-F0-2F-4B	Apple, Inc.
-60-A4-B7	TP-Link Corporation Limited
-8C-D9-D6	Xiaomi Communications Co Ltd
-60-C5-E6	Skullcandy
-38-F3-FB	Asperiq
 A4-58-02	SHIN-IL TECH
 38-AF-D0	Nevro
 00-A0-0E	NETSCOUT SYSTEMS INC
+60-A4-B7	TP-Link Corporation Limited
+38-F3-FB	Asperiq
 30-A6-12	ShenZhen Hugsun Technology Co.,Ltd.
+18-BB-41	Huawei Device Co., Ltd.
+E8-F6-54	HUAWEI TECHNOLOGIES CO.,LTD
+20-87-EC	HUAWEI TECHNOLOGIES CO.,LTD
+54-F6-E2	HUAWEI TECHNOLOGIES CO.,LTD
+78-18-A8	Huawei Device Co., Ltd.
+80-72-64	Huawei Device Co., Ltd.
 EC-B4-E8	Wistron Mexico SA de CV
 10-38-1F	Sichuan AI-Link Technology Co., Ltd.
 3C-7A-C4	Chemtronics
 54-14-F3	Intel Corporate
-5C-C8-E3	Shintec Hozumi co.ltd.
-18-BB-41	Huawei Device Co., Ltd.
-78-18-A8	Huawei Device Co., Ltd.
-80-72-64	Huawei Device Co., Ltd.
-54-F6-E2	HUAWEI TECHNOLOGIES CO.,LTD
-A8-50-81	HUAWEI TECHNOLOGIES CO.,LTD
-E8-F6-54	HUAWEI TECHNOLOGIES CO.,LTD
-20-87-EC	HUAWEI TECHNOLOGIES CO.,LTD
-6C-FE-54	Intel Corporate
 08-6A-C5	Intel Corporate
+5C-C8-E3	Shintec Hozumi co.ltd.
+A8-50-81	HUAWEI TECHNOLOGIES CO.,LTD
+6C-FE-54	Intel Corporate
 8C-36-7A	Palo Alto Networks
 1C-FF-59	Sichuan Tianyi Comheart Telecom Co.,LTD
 C0-1B-23	Sichuan Tianyi Comheart Telecom Co.,LTD
-10-1E-DA	INGENICO TERMINALS SAS
 8C-6A-8D	Technicolor CH USA Inc.
-68-DD-D9	HMD Global Oy
 3C-19-5E	Samsung Electronics Co.,Ltd
 6C-94-66	Intel Corporate
 4C-3B-6C	GARO AB
+10-1E-DA	INGENICO TERMINALS SAS
+68-DD-D9	HMD Global Oy
+D4-41-65	Sichuan Tianyi Comheart Telecom Co.,LTD
 FC-37-2B	Sichuan Tianyi Comheart Telecom Co.,LTD
 7C-CC-1F	Sichuan Tianyi Comheart Telecom Co.,LTD
 5C-4A-1F	Sichuan Tianyi Comheart Telecom Co.,LTD
 24-8B-E0	Sichuan Tianyi Comheart Telecom Co.,LTD
+E8-DA-00	Kivo Technology, Inc.
 9C-9C-40	Sichuan Tianyi Comheart Telecom Co.,LTD
 54-E0-61	Sichuan Tianyi Comheart Telecom Co.,LTD
 18-75-32	Sichuan Tianyi Comheart Telecom Co.,LTD
-78-B8-4B	Sichuan Tianyi Comheart Telecom Co.,LTD
-D4-41-65	Sichuan Tianyi Comheart Telecom Co.,LTD
 EC-8A-C4	Amazon Technologies Inc.
 44-35-6F	Neterix Ltd
+78-B8-4B	Sichuan Tianyi Comheart Telecom Co.,LTD
 00-22-89	Vanderlande APC inc.
-E8-DA-00	Kivo Technology, Inc.
 50-8A-06	Tuya Smart Inc.
 D4-08-68	Beijing Lanxum Computer Technology CO.,LTD.

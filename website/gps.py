@@ -5,12 +5,12 @@ import serial
 from datetime import datetime
 
 from time import sleep, mktime, time
-
+from website.settings import GPS_SERIAL
 
 from threading import Thread, Event, Lock
 
 #Serial baud rate of neo 8M: 9600Bd (baud rate ist die symbolrate, also anzahl uebertragene zeichen pro sekunde)
-ser = serial.Serial('/dev/stdin', 9600, timeout=5.0) #'/dev/serial0'
+ser = serial.Serial(GPS_SERIAL, 9600, timeout=5.0) #'/dev/serial0'
 
 #nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
 sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
@@ -52,8 +52,12 @@ class GPSRoute():
     def stop_capture(self):
         self._stop.set()
         self.t.join()
+
+        #store in file
+        self.store_as_file()
         print(f"[+] GPS Capture '{self.name}'' Stopped")
 
+    #TODO: write to file during capture (e.g. when calling _add_waypoint)
     def store_as_file(self):
         f = open(self.filepath, "w")
         for waypoint in self.waypoints:

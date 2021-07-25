@@ -10,6 +10,7 @@
             <th scope="col">BSSID</th>
             <th scope="col">SSID</th>
             <th scope="col">CH</th>
+            <th scope="col">Vendor</th>
           </tr>
         </thead>
         <tbody id=aps>
@@ -43,11 +44,14 @@
               td_ssid.innerHTML = aps[mac][1]
               let td_channel = createNode('td')
               td_channel.innerHTML = aps[mac][2]
+              let td_vendor = createNode('td')
+              td_vendor.innerHTML = aps[mac][3]
 
               append(table, tr);
               append(tr, td_bssid);
               append(tr, td_ssid);
               append(tr, td_channel);
+              append(tr, td_vendor);
             }
           })
           .catch(function(error) {
@@ -57,7 +61,7 @@
       
       refresh()
       document.addEventListener("DOMContentLoaded", function() {
-        setInterval(refresh, 10000) //setInterval could be replaced 
+        setInterval(refresh, 7000) //setInterval could be replaced 
       });
     </script>
 {% endblock content %}

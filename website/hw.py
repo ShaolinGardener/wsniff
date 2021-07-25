@@ -3,15 +3,20 @@ from time import sleep, time
 
 from website import app
 from website.interfaces import monitor_iface
+from website.gps import GPSRoute
 
 from scapy.all import *
 
-
 class _Capture:
-    def __init__(self, id: int, channel: int, interface: str):
+
+    def __init__(self, id: int, channel: int, interface: str, gps_tracking: bool):
         self.id = id
         self.channel = channel
         self.interface = interface
+        
+        if gps_tracking: #TODO: name of route using db to query for capture title maybe?
+            path = os.path.join(app.root_path, "static", "captures", str(id), "gps.txt")
+            self.gps_route = GPSRoute(str(id), path)
 
         path = os.path.join(app.root_path, "static", "captures", str(id), "cap.pcap")
         self.packet_writer = PcapWriter(path,
@@ -45,11 +50,19 @@ class _Capture:
     def start(self):
         self.t = Thread(target=self._capture)
         self.t.start()
+
+        if self.gps_route:
+            self.gps_route.start_capture()
+
         print(f"[+] Capture {self.id} Started")
     
     def stop(self):
         self._stop.set()
         self.t.join()
+
+        if self.gps_route:
+            self.gps_route.stop_capture()
+
         print(f"[+] Capture {self.id} Stopped")
 
     
@@ -59,11 +72,11 @@ class _Capture:
 
 #TODO: use redis for multiple captures using many WIFI-Adapters
 captures = dict()
-def start_capture(id: int, channel: int, interface: str):
+def start_capture(id: int, channel: int, interface: str, gps_tracking: bool):
     if captures.get(id):
         raise ValueError(f"Capture '{id}' already running.")
     #add capture
-    c = _Capture(id, channel, interface)
+    c = _Capture(id, channel, interface, gps_tracking)
     captures[id] = c
     c.start()
 

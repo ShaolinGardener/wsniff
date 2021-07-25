@@ -2,6 +2,7 @@ from threading import Thread, Event, Lock
 from time import sleep
 import time
 import random, os
+import website.oui as oui
 
 from scapy.all import *
 
@@ -100,7 +101,7 @@ def scan(iface):
     aps.clear()
 
 
-def start_scan(interface:str="wlan1mon" , t_remove:int=15, t_clean=10):
+def start_scan(interface:str, t_remove:int=23, t_clean=7):
     """
     t_remove: if the access point has not been seen for this time, it is removed from the list of active access points
     t_clean: time span between two iterations of the cleaning thread
@@ -130,14 +131,18 @@ def stop_scan():
     aps.clear() #clear results from previous scan (this is also done in the scan function and necessary there, but for logical reasons also included here)
 
 def get_aps():
+    """
+    get list of aps
+    format: (bssid, ssid, channel, vendor)
+    """
     #lock.acquire()
     copy = aps.copy()
     #lock.release()
-    res = [(ap.bssid, ap.ssid, ap.channel) for ap in copy.values()]
+    res = [(ap.bssid, ap.ssid, ap.channel, oui.lookup(ap.bssid)) for ap in copy.values()]
     return res
 
 if __name__ == "__main__":
-    start_scan(t_remove=0.5)
+    start_scan(interface="wlan1mon", t_remove=0.5, t_clean=2)
     sleep(2)
     t = get_aps()
     for ap in t:

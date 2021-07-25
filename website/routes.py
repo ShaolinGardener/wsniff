@@ -5,12 +5,13 @@ from flask_login import login_required, login_user, logout_user, current_user
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureForm
 from website.models import User, Capture
-from website.settings import INTERFACE
+import website.interfaces
 
 from website.hw import get_capture, start_capture, stop_capture, get_running_ids
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
-from website.interfaces import monitor_iface
+import website.interfaces as interfaces
+import website.oui as oui
 
 from sqlalchemy import desc
 import secrets
@@ -38,10 +39,6 @@ def home(path=""):
     #old_captures = Capture.query.filter(~Capture.id.in_(running_ids)).order_by(desc(Capture.date_created)).all()
     #db.session.commit()
     return render_template("home.html", title="Home", running=running_captures, old = old_captures)
-
-@app.route("/help")
-def help():
-    return "Help"
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -93,6 +90,58 @@ def logout():
     return redirect(url_for("login"))
     
 
+@app.route("/settings")
+@login_required
+def settings():
+    ifaces = interfaces.get_wireless_interfaces()
+    return render_template("settings.html", title="Settings", interfaces=ifaces)
+
+@app.route("/shutdown")
+def shutdown():
+    str_shutdown = "shutdown -h now"
+    subprocess.run(str_shutdown, shell=True, check=True)
+    return render_template("settings.html", title="Settings", interfaces=ifaces)
+
+@app.route("/settings/interfaces/<string:interface>/monitor/activate")
+@login_required
+def activate_monitor(interface:str):
+    iface = interfaces.Interface(interface)
+    try:
+        iface.enable_monitor_mode()
+    except:
+       flash(f"Could not turn '{interface}' into monitor mode", "danger") 
+       return redirect(url_for("settings"))
+
+    flash(f"Interface '{interface}' is now in monitor mode", "success")
+    return redirect(url_for("settings"))
+
+@app.route("/settings/interfaces/<string:interface>/monitor/deactivate")
+@login_required
+def deactivate_monitor(interface:str):
+    iface = interfaces.Interface(interface, mode=interfaces.Mode.MONITOR)
+    try:
+        iface.disable_monitor_mode()
+    except:
+       flash(f"Could not disable '{interface}'", "danger") 
+       return redirect(url_for("settings"))
+
+    flash(f"Disabled monitor mode for '{interface}'", "success")
+    return redirect(url_for("settings"))
+
+@app.route("/settings/oui/update")
+@login_required
+def update_oui():
+    oui_dirpath = os.path.join(app.root_path, "static", "res")
+    try:
+        oui.download(to_directory=oui_dirpath)
+        oui.load_local_oui(oui_dirpath)
+    except Exception as e:
+        flash("Failed to update. Check your internet connection.", "danger")
+        return redirect(url_for("settings"))
+    
+    flash("Successfull update", "success")
+    return redirect(url_for("settings"))
+
 @app.route("/geo/start")
 @login_required
 def geo_start():
@@ -118,10 +167,12 @@ def geo():
 @login_required
 def capture_start(id):
     title = request.args.get("title")
-    if not title:
-        title = ""
+    gps_tracking = request.args.get("gps_tracking")
+    if not title: title = ""
+    if not gps_tracking: gps_tracking = false
+
     try:
-        start_capture(id, 11, INTERFACE)
+        start_capture(id, 11, interfaces.monitor_iface.get_name(), gps_tracking)
         flash(f"Capture {title} started", "success")
     except ValueError as e:
         flash(f"Capture {title} already running.", "danger")
@@ -131,8 +182,8 @@ def capture_start(id):
 @login_required
 def capture_stop(id):
     title = request.args.get("title")
-    if not title:
-        title = ""
+    if not title: title = ""
+    
     try:
         stop_capture(id)
         flash(f"Capture {title} stopped", "success")
@@ -192,6 +243,7 @@ def new_capture():
         #add to db
         title = form.title.data
         filename = gen_filename(title)
+        gps_tracking = form.gpsTracking.data
         cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id,
                         gps=form.gpsTracking.data, channel=form.channel.data)
         db.session.add(cap)
@@ -201,7 +253,7 @@ def new_capture():
         path = os.path.join(app.root_path, "static", "captures", str(cap.id))
         os.makedirs(path)
 
-        return redirect(url_for("capture_start", id=cap.id, title=title))
+        return redirect(url_for("capture_start", id=cap.id, title=title, gps_tracking=gps_tracking))
     return render_template("add_capture.html", title="Add Capture", form=form)
 
 @app.route("/capture/<int:id>/delete")
@@ -226,7 +278,7 @@ def capture_delete(id: int):
 @login_required
 def detect_start():
     try:
-        start_scan(INTERFACE)
+        start_scan(interfaces.monitor_iface.get_name())
         flash("Starting Access Point Scan", "success")
     except ValueError as e:
         flash(str(e), "danger")

@@ -40,6 +40,7 @@ def download(to_directory: str):
             count += 1
     except Exception as e:
         print(f"[-] Error occurred when updating 'oui.txt': {e}")
+        raise Exception()
     finally:
         if out: out.close()
     
@@ -69,9 +70,12 @@ def lookup(mac: str):
     Takes an entire MAC-address and returns an organization
     """
 
-    oui_part = mac[:8]
-    if ":" in oui_part: #to change addresses with the :-Syntax 
+    oui_part = mac[:8] 
+
+    #convert address to a uniform format 
+    if ":" in oui_part: #in order to change addresses with the :-Syntax 
         oui_part = oui_part.replace(":", "-")
+    oui_part = oui_part.upper()
 
     organization = _table.get(oui_part)
     if organization:

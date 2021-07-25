@@ -7,7 +7,8 @@ config.py # contains passwords etc!
 db.sqlite
 *.css.map #created by sass - this only leads to merge conflicts
 captures/
-.vscode/
+### VisualStudioCode ###
+.vscode/*
 
 #downloads/
 #!challenge_pics/default.jpg #FIXME: does not work

@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Settings</h1>
+<p>Configure your device here.</p>
+
+<div>
+  <h2>Interfaces</h2>
+  <div class="card">
+    <ul class="list-group list-group-flush">
+      {% for iface in interfaces %}
+      <li class="list-group-item">
+        {{iface}} 
+        {% if "mon" not in iface %}
+          <a class="btn btn-primary btn-sm ml-4" href="{{ url_for('activate_monitor', interface=iface) }}">Activate Monitor Mode</a>
+        {% else %}
+          <a class="btn btn-danger btn-sm ml-1" href="{{ url_for('deactivate_monitor', interface=iface) }}">Deactivate</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div><!-- end interfaces -->
+
+<div class="mt-4">
+  <h2>OUI</h2>
+  <p>Organizationally Unique Identifier - used to identify the company behind a MAC-Address.</p>
+  <a class="btn btn-outline-primary" href="{{ url_for('update_oui') }}">Update to newest version now</a>
+  <p class="mt-1"><small class="text-muted small">This can take a while, so please wait for a reply message.
+    Requires an active internet connection. 
+  </small></p>
+</div>
+
+<div class="mt-5">
+  <a class="btn btn-danger btn-block" href="{{ url_for('shutdown') }}">Shutdown device</a>
+</div>
+{% endblock content %}
