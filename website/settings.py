@@ -1,4 +1,4 @@
-INTERFACE = "wlan1" #wlan1mon en0
+INTERFACE = "wlan1mon" #wlan1mon en0
 GPS_SERIAL = "/dev/serial0" #/dev/serial0
 
 FLASK_THREADED = True

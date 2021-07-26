@@ -10,6 +10,7 @@
             <th scope="col">BSSID</th>
             <th scope="col">SSID</th>
             <th scope="col">CH</th>
+            <th scope="col">Signal Strength</th>
             <th scope="col">Vendor</th>
           </tr>
         </thead>
@@ -44,13 +45,16 @@
               td_ssid.innerHTML = aps[mac][1]
               let td_channel = createNode('td')
               td_channel.innerHTML = aps[mac][2]
+              let td_strength = createNode('td')
+              td_strength.innerHTML = aps[mac][3]
               let td_vendor = createNode('td')
-              td_vendor.innerHTML = aps[mac][3]
+              td_vendor.innerHTML = aps[mac][4]
 
               append(table, tr);
               append(tr, td_bssid);
               append(tr, td_ssid);
               append(tr, td_channel);
+              append(tr, td_strength);
               append(tr, td_vendor);
             }
           })

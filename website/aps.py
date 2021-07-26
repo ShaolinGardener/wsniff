@@ -3,6 +3,7 @@ from time import sleep
 import time
 import random, os
 import website.oui as oui
+from website.dot11.frame import Frame 
 
 from scapy.all import *
 
@@ -13,23 +14,45 @@ class AccessPoint():
         self.bssid = bssid
         self.ssid = ssid
         self.channel = channel
+        self.signal_strength = 0
 
         self.t_last_seen = time.time()
     
     def isAlive(self, t_death=20):
         return time.time() - self.t_last_seen < t_death
 
-    def refresh(self):
+    def refresh(self, signal_strength=0):
         self.t_last_seen = time.time()
+        
+        if signal_strength != 0:
+            self.signal_strength = signal_strength
 
 
     def __str__(self):
         return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
 
 
+class Station:
+    def __init__(self, mac, bssid):
+        self.bssid = bssid
+        self.mac = mac
+        self.signal_strength = 0
+
+        self.t_last_seen = time.time()
+
+
+#to prevent race conditions
+lock = Lock() 
+
 #bssid as unique identifier, AccessPoint object as value
-lock = Lock() #lock is not really needed here because there is just one thread writing and one reading
-aps = dict() #all APs that are uncovered
+# bssid: str -> ap: AcessPoint
+aps = dict() #all APs that are uncovered 
+
+# bssid: str -> # station-MAC: str ; e.g. {"bc:30:d9:33:30:ca" : "e8:df:70:f8:32:80"}
+ap_station_mapper = dict() #assign stations to access points
+
+# bssid: str -> station: Station
+stations = dict() #all Stations
 _running = Event() #used to synchronize
 
 
@@ -52,16 +75,6 @@ def clean(t_remove, t_sleep=10):
                 del aps[bssid]
         
 
-def found_access_point(bssid, ssid, channel):
-    #found new access point: add it to dict
-    if bssid not in aps:
-        ap = AccessPoint(bssid, ssid, channel)
-        aps[bssid] = ap
-    else:
-        #acess point already in dict -> refresh AP to prevent it from getting deleted
-        aps[bssid].refresh()
-
-
 
 def hopper(iface):
     channel = 1
@@ -81,17 +94,33 @@ def handlePacket(pkt):
         #bssid of AP is stored in second address field of header
         bssid = pkt.getlayer(Dot11).addr2 
 
+
+        #found new access point: add it to dict
         if bssid not in aps:
             ssid = pkt.getlayer(Dot11Elt).info.decode("utf-8")
             channel = pkt.getlayer(Dot11Elt).channel
+            ap = AccessPoint(bssid, ssid, channel)
 
-            found_access_point(bssid, ssid, channel)
+            if pkt.haslayer(RadioTap):   
+                ap.signal_strength = pkt[RadioTap].dBm_AntSignal
+
+            aps[bssid] = ap
+        else: #acess point already in dict -> refresh AP to prevent it from getting deleted
+            #acess point already in dict -> refresh AP to prevent it from getting deleted
+            if not pkt.haslayer(RadioTap): 
+                aps[bssid].refresh()
+            else:
+                signal_strength = pkt[RadioTap].dBm_AntSignal
+                aps[bssid].refresh(signal_strength)
             
-            #hidden networks
-            if ssid == '' or pkt.getlayer(Dot11Elt).ID != 0:
-               print("[+] Hidden Network Detected")
-            #print("[+] AP detected: %s" % (ssid))
-
+        # #hidden networks
+        # if ssid == '' or pkt.getlayer(Dot11Elt).ID != 0:
+        #    print("[+] Hidden Network Detected")
+        # #print("[+] AP detected: %s" % (ssid))
+    else:
+        f = Frame(pkt)
+        
+        print(f)
 
 def scan(iface):
     while _running.is_set():
@@ -138,7 +167,8 @@ def get_aps():
     #lock.acquire()
     copy = aps.copy()
     #lock.release()
-    res = [(ap.bssid, ap.ssid, ap.channel, oui.lookup(ap.bssid)) for ap in copy.values()]
+    res = [(ap.bssid, ap.ssid, ap.channel, ap.signal_strength, oui.lookup(ap.bssid)) for ap in copy.values()]
+    res.sort(key=lambda ap: ap[3], reverse=True) #sort according to signal streng in desc order
     return res
 
 if __name__ == "__main__":
