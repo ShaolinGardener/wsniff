@@ -48,11 +48,12 @@ lock = Lock()
 # bssid: str -> ap: AcessPoint
 aps = dict() #all APs that are uncovered 
 
-# bssid: str -> # station-MAC: str ; e.g. {"bc:30:d9:33:30:ca" : "e8:df:70:f8:32:80"}
+# bssid: str -> # station-MACs: lsit ; e.g. {"bc:30:d9:33:30:ca" : ["e8:df:70:f8:32:80", "e4:df:70:f8:32:80"]}
 ap_station_mapper = dict() #assign stations to access points
 
 # bssid: str -> station: Station
-stations = dict() #all Stations
+stations = dict() #all Stations --- NOT USED RIGHT NOW!
+
 _running = Event() #used to synchronize
 
 
@@ -90,10 +91,10 @@ def hopper(iface):
 
 
 def handlePacket(pkt):
+    
     if pkt.haslayer(Dot11Beacon):
         #bssid of AP is stored in second address field of header
         bssid = pkt.getlayer(Dot11).addr2 
-
 
         #found new access point: add it to dict
         if bssid not in aps:
@@ -118,9 +119,34 @@ def handlePacket(pkt):
         #    print("[+] Hidden Network Detected")
         # #print("[+] AP detected: %s" % (ssid))
     else:
+        a1 = pkt.getlayer(Dot11).addr1
+        a2 = pkt.getlayer(Dot11).addr2
+        a3 = pkt.getlayer(Dot11).addr3
+        a4 = pkt.getlayer(Dot11).addr4
+        #print(f"{a1} {a2} {a3} {a4}")
+
         f = Frame(pkt)
+        #print(f)
+
+        #von ap to station
+        if f.bssid and f.dst != "ff:ff:ff:ff:ff:ff":  #and f.frame_type == Frame.DOT11_FRAME_TYPE_DATA:
+            station = f.dst
+            ap = f.src
+            #print(f"AP->STA station: {station}")
+            if ap not in ap_station_mapper:
+                ap_station_mapper[ap] = set()
+            ap_station_mapper[ap].add(station)
+
+        elif f.src and f.src != "ff:ff:ff:ff:ff:ff": #from station to ap
+            #TODO: sometimes (control frames) the src is actually an AP although there is no bssid
+            station = f.src
+            ap = f.dst
+            #print(f"STA->AP station {station}")
+            if ap not in ap_station_mapper:
+                ap_station_mapper[ap] = set()
+            ap_station_mapper[ap].add(station)
+
         
-        print(f)
 
 def scan(iface):
     while _running.is_set():
@@ -128,7 +154,11 @@ def scan(iface):
     #because stop_scan can run through before while loop, access points can be added to aps after _running has been unset
     #therefore it is necessary to call clear exactly here
     aps.clear()
+    ap_station_mapper.clear()
 
+
+def detection_is_running():
+    return _running.is_set()
 
 def start_scan(interface:str, t_remove:int=23, t_clean=7):
     """
@@ -159,6 +189,7 @@ def stop_scan():
     _running.clear()
     aps.clear() #clear results from previous scan (this is also done in the scan function and necessary there, but for logical reasons also included here)
 
+
 def get_aps():
     """
     get list of aps
@@ -170,6 +201,13 @@ def get_aps():
     res = [(ap.bssid, ap.ssid, ap.channel, ap.signal_strength, oui.lookup(ap.bssid)) for ap in copy.values()]
     res.sort(key=lambda ap: ap[3], reverse=True) #sort according to signal streng in desc order
     return res
+
+def get_stations_for(bssid):
+    stations = ap_station_mapper.get(bssid)
+    if stations:
+        return list(stations)
+    return []
+    
 
 if __name__ == "__main__":
     start_scan(interface="wlan1mon", t_remove=0.5, t_clean=2)

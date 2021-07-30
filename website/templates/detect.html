@@ -2,8 +2,16 @@
 
 {% block content %}
     <h1>Detect Access Points</h1>
-    <p>Im Folgenden eine Auflistung der BSSIDs in der Umgebung.</p>
+    <p>A list of WiFi Acess Points in your vicinity.</p>
 
+    <div class="text-center mt-4 mb-4">
+      {% if running %}
+      <a class="btn btn-danger btn-lg" href="{{url_for('detect_stop')}}">Stop detection</a>
+      {% else %}
+        <a class="btn btn-success btn-lg" href="{{url_for('detect_start')}}">Start detection</a>
+      {% endif %}
+    </div>
+    
     <table class="table table-striped">
         <thead>
           <tr>
@@ -28,6 +36,14 @@
         return parent.appendChild(el);
       }
 
+      function create_link(ssid, bssid) {
+        var a = document.createElement("a")
+        var linkText = document.createTextNode(ssid);
+        a.appendChild(linkText);
+        a.href = "./detect/aps/" + bssid + "/" + ssid
+        return a
+      }
+
       function refresh() {
         const table = document.getElementById("aps");
         //first remove old content
@@ -38,17 +54,27 @@
           .then(function(data) {
             let aps = data.aps
             for(let mac in aps) {
+              let bssid = aps[mac][0]
+              let ssid = aps[mac][1]
+              let channel = aps[mac][2]
+              let signal_strength = aps[mac][3]
+              let vendor = aps[mac][4]
+              
               let tr = createNode('tr')
               let td_bssid = createNode('td')
-              td_bssid.innerHTML = aps[mac][0]
+              td_bssid.innerHTML = bssid
               let td_ssid = createNode('td')
-              td_ssid.innerHTML = aps[mac][1]
+              
+              let a = create_link(ssid, bssid)
+              append(td_ssid, a)
+
+              //td_ssid.innerHTML = ssid
               let td_channel = createNode('td')
-              td_channel.innerHTML = aps[mac][2]
+              td_channel.innerHTML = channel
               let td_strength = createNode('td')
-              td_strength.innerHTML = aps[mac][3]
+              td_strength.innerHTML = signal_strength
               let td_vendor = createNode('td')
-              td_vendor.innerHTML = aps[mac][4]
+              td_vendor.innerHTML = vendor
 
               append(table, tr);
               append(tr, td_bssid);

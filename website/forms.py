@@ -7,8 +7,8 @@ from website.models import User
 class CaptureForm(FlaskForm):
     title = StringField("Name", validators=[DataRequired(), Length(min=2, max=256)])
     desc = StringField("Description", validators=[])
-    gpsTracking = BooleanField(label="GPS Tracking", default="checked")
-    channel = SelectField(label="Channel", choices=list(range(14)), coerce=int, validate_choice=True)
+    gpsTracking = BooleanField(label="GPS Tracking")
+    channel = SelectField(label="Channel", choices=list(range(1, 14)), coerce=int, validate_choice=True)
 
     submit = SubmitField("Start Capture")
 

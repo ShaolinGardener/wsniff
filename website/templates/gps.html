@@ -6,7 +6,6 @@
 integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
 crossorigin=""></script>
     
-<h2>My Map</h2>
 
 {% if not available %}
 <div class="alert alert-danger" role="alert">
@@ -17,6 +16,16 @@ crossorigin=""></script>
     GPS Connection Available
 </div>
 {% endif %}
+
+<h2>Current Location</h2>
+
+<div class="text-center mt-4 mb-4">
+    {% if running %}
+      <a class="btn btn-danger btn-lg" href="{{url_for('gps_stop')}}">Stop GPS module</a>
+    {% else %}
+      <a class="btn btn-success btn-lg" href="{{url_for('gps_start')}}">Start GPS module</a>
+    {% endif %}
+</div>
 
 <div id="mapid" style="height: 500px;"></div>
 

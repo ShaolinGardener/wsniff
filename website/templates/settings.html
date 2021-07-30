@@ -22,7 +22,21 @@
   </div>
 </div><!-- end interfaces -->
 
-<div class="mt-4">
+<!-- GPS -->
+<div class="mt-4 text-justify">
+  <h2>GPS</h2>
+  <p>If you enable the integrated GPS module you are able to track your position during captures.</p>
+  {% if gps_running %}
+    <a class="btn btn-danger" href="{{url_for('gps_stop')}}">Stop GPS module</a>
+  {% else %}
+    <div class="text-center">
+      <a class="btn btn-success" href="{{url_for('gps_start')}}">Start GPS module</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- OUI -->
+<div class="mt-4 text-justify">
   <h2>OUI</h2>
   <p>Organizationally Unique Identifier - used to identify the company behind a MAC-Address.</p>
   <a class="btn btn-outline-primary" href="{{ url_for('update_oui') }}">Update to newest version now</a>

@@ -8,6 +8,7 @@ from website.models import User, Capture
 import website.interfaces
 
 from website.hw import get_capture, start_capture, stop_capture, get_running_ids
+import website.aps as aps
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
 import website.interfaces as interfaces
@@ -38,7 +39,9 @@ def home(path=""):
     #running_captures = Capture.query.filter(Capture.id.in_(running_ids)).all()
     #old_captures = Capture.query.filter(~Capture.id.in_(running_ids)).order_by(desc(Capture.date_created)).all()
     #db.session.commit()
-    return render_template("home.html", title="Home", running=running_captures, old = old_captures)
+
+    interface_available = interfaces.monitor_interface_available()
+    return render_template("home.html", title="Home", running=running_captures, old=old_captures, interface_available=interface_available)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -86,7 +89,7 @@ def login():
 def logout():
     logout_user()
 
-    flash("Du bist jetzt ausgeloggt!", category="success")
+    flash("You are now logged out!", category="success")
     return redirect(url_for("login"))
     
 
@@ -94,7 +97,8 @@ def logout():
 @login_required
 def settings():
     ifaces = interfaces.get_wireless_interfaces()
-    return render_template("settings.html", title="Settings", interfaces=ifaces)
+    gps_running = gps.gps_is_running()
+    return render_template("settings.html", title="Settings", interfaces=ifaces, gps_running=gps_running)
 
 @app.route("/shutdown")
 def shutdown():
@@ -142,26 +146,27 @@ def update_oui():
     flash("Successfull update", "success")
     return redirect(url_for("settings"))
 
-@app.route("/geo/start")
+@app.route("/gps/start")
 @login_required
-def geo_start():
+def gps_start():
     gps.start_gps_tracking()
     flash("Started GPS Module", "success")
-    return redirect(url_for("geo"))
+    return redirect(url_for("gps_show"))
 
-@app.route("/geo/stop")
+@app.route("/gps/stop")
 @login_required
-def geo_stop():
+def gps_stop():
     gps.stop_gps_tracking()
     flash("Stopped GPS Module", "success")
-    return redirect(url_for("geo"))
+    return redirect(url_for("gps_show"))
 
-@app.route("/geo")
+@app.route("/gps")
 @login_required
-def geo():
+def gps_show():
     available = gps.is_gps_available()
     lat, lon = gps.get_gps_data()
-    return render_template("geo.html", available=available, lat=lat, lon=lon)
+    running = gps.gps_is_running()
+    return render_template("gps.html", available=available, lat=lat, lon=lon, running=running)
 
 @app.route("/capture/<int:id>/start")
 @login_required
@@ -206,8 +211,9 @@ def capture_get(id):
 @app.route("/capture/<int:id>/show")
 def capture_show(id):
     try:
-        c = get_capture(id) 
-        return render_template("capture.html", title="Show Capture", c=c)
+        #c = get_capture(id) 
+        capture = Capture.query.get(id)
+        return render_template("capture.html", title="Show Capture", capture=capture)
     except ValueError as e:
         flash(str(e), "danger")
         return redirect(url_for("home")) 
@@ -238,6 +244,11 @@ def gen_filename(title):
 @app.route("/capture/new", methods=["GET", "POST"])
 @login_required
 def new_capture():
+    #is an interface with monitor mode available?
+    if not interfaces.monitor_interface_available():
+        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+        return redirect(url_for("settings"))
+
     form = CaptureForm()
     if form.validate_on_submit():
         #add to db
@@ -254,7 +265,9 @@ def new_capture():
         os.makedirs(path)
 
         return redirect(url_for("capture_start", id=cap.id, title=title, gps_tracking=gps_tracking))
-    return render_template("add_capture.html", title="Add Capture", form=form)
+
+    gps_available = gps.is_gps_available()
+    return render_template("add_capture.html", title="Add Capture", form=form, gps_available=gps_available)
 
 @app.route("/capture/<int:id>/delete")
 @login_required
@@ -300,4 +313,18 @@ def detect_get():
 @app.route("/detect")
 @login_required
 def detect_aps():
-    return render_template("detect.html", title="Detect Access Points")
+    #is an interface with monitor mode available?
+    if not interfaces.monitor_interface_available():
+        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+        return redirect(url_for("settings"))
+
+    running = aps.detection_is_running()
+    return render_template("detect.html", title="Detect Access Points", running=running)
+
+@app.route("/detect/aps/<string:bssid>/<string:ssid>")
+@login_required
+def get_stations(bssid, ssid):
+    stations = aps.get_stations_for(bssid)
+    vendors = [oui.lookup(station) for station in stations]
+    size = len(stations)
+    return render_template("ap.html", title="Access Point", ssid=ssid, stations=stations, vendors=vendors, size=size)

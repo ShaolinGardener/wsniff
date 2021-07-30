@@ -39,9 +39,18 @@
                 {{ form.channel.label(class='form-control-label') }}
                 {{ form.channel(class='form-control') }}
             </div>
+            <!-- GPS checkbox -->
             <div class="form-check">
-                {{ form.gpsTracking(class='form-check-input') }}
+                {% if gps_available %}
+                  {{ form.gpsTracking(class='form-check-input') }}
+                {% else %}
+                  {{ form.gpsTracking(class='form-check-input', **{'disabled': disabled}) }}
+                {% endif %}
                 {{ form.gpsTracking.label(class='form-check-label') }}
+                
+                {% if not gps_available %}
+                    <div><small class="text-muted">No GPS available. Activate it in the settings or wait until a connection is established.</small></div>
+                {% endif %}
             </div>
         </fieldset>
         <div class="form-group">

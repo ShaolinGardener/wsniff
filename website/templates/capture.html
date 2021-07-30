@@ -1,8 +1,26 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1>Capture {{ c.id }}</h1>
-<p>Anzahl der Pakete: <span id="num-packets"></span></p>
+<h1>Capture {{ capture.title }}</h1>
+<div class="card">
+    <div class="card-header text-muted">
+        Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
+        Id: {{ capture.id }}
+        GPS: {{ capture.gps }}
+    </div>
+    <div class="card-body">
+    <h5 class="card-title">{{ capture.title }}</h5>
+    <p class="card-text">{{ capture.desc }}</p>
+    <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger">Stop capture</a>
+    </div>
+</div>
+<p class="lead">Anzahl der Pakete: <b><span id="num-packets"></span></b></p>
+
+<div class="text-center mt-4 mb-4">
+    <a class="btn btn-link btn-lg" href="{{url_for('home')}}">Back</a>
+</div>
+
+
 <script>
     function loadInfo() {
         let request = new XMLHttpRequest();
@@ -12,7 +30,7 @@
                 document.getElementById("num-packets").innerHTML = capture.num_packets;
             }
         };
-        request.open("GET", "{{  url_for('capture_get', id=c.id) }}")       
+        request.open("GET", "{{  url_for('capture_get', id=capture.id) }}")       
         request.send();
     }
 

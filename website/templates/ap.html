@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h1>{{ ssid }}</h1>
+    <p>List of stations associated with this access point.</p>
+    
+    <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">Station</th>
+            <th scope="col">Vendor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(size) %}
+            <tr>
+              <td>{{stations[i]}}</td>
+              <td>{{vendors[i]}}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+ 
+      <div class="text-center mt-4 mb-4">
+        <a class="btn btn-link btn-lg" href="{{url_for('detect_aps')}}">Back</a>
+      </div>
+      
+{% endblock content %}

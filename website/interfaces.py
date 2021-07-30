@@ -17,6 +17,11 @@ def get_wireless_interfaces():
     ifaces = get_interfaces()
     return list(filter(lambda iface: "wlan" in iface, ifaces))
 
+def monitor_interface_available():
+    iw = get_wireless_interfaces() #wireless interfaces
+    mon_iw = list(filter(lambda iface: "mon" in iface, iw)) #get wireless interfaces in monitor mode
+    return len(mon_iw) > 0
+
 class Mode(Enum):
         MANAGED = 1
         MONITOR = 2

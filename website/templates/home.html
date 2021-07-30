@@ -3,6 +3,18 @@
 {% block content %}
 <h1>Dashboard</h1>
 <p>Here you can find all the relevant information.</p>
+
+{% if not interface_available %}
+<div class="card mt-4 mb-4">
+  <div class="card-body text-justify">
+    No interface with monitor mode active. In order to capture packets, activate monitor mode for one of your wireless interfaces.
+    <div class="text-center">
+      <a class="btn btn-primary btn-lg mt-3" href="{{ url_for('settings') }}">Activate Monitor Mode</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div>
   <h2>Running Captures</h2>
     {% if not running %}
@@ -14,12 +26,13 @@
         <div class="card-header text-muted">
             Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
             Id: {{ capture.id }}
+            GPS: {{ capture.gps }}
         </div>
         <div class="card-body">
         <h5 class="card-title">{{ capture.title }}</h5>
         <p class="card-text">{{ capture.desc }}</p>
-        <a href="{{ url_for('capture_show', id=capture.id) }}" class="btn btn-info">Show capture</a>
-        <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger">Stop capture</a>
+        <a href="{{ url_for('capture_show', id=capture.id) }}" class="btn btn-info mb-1">Show capture</a>
+        <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger mb-1">Stop capture</a>
         </div>
     </div>
     {% endfor %}
@@ -36,12 +49,13 @@
                 <div class="card-header text-muted">
                     Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
                     Id: {{ capture.id }}
+                    GPS: {{ capture.gps }}
                 </div>
                 <div class="card-body">
                 <h5 class="card-title">{{ capture.title }}</h5>
                 <p class="card-text">{{ capture.desc }}</p>
-                <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info">Download</a>
-                <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger">Delete capture</a>
+                <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info mb-1">Download</a>
+                <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger mb-1">Delete capture</a>
                 </div>
             </div>
         </div>

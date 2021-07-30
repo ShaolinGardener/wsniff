@@ -106,6 +106,7 @@ class GPSRoute():
         return res
 
 _stop_event = Event()
+_stop_event.set()
 _lock = Lock()
 _current_position = (0.0, 0.0)
 _gps_available = False
@@ -170,6 +171,8 @@ def stop_gps_tracking():
     _stop_event.set()
     _gps_available = False
 
+def gps_is_running():
+    return not _stop_event.is_set()
 
 def test_tracking():
     print("[*] Starting ... there should be some output")
