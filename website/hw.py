@@ -7,6 +7,9 @@ from website.gps import GPSRoute
 
 from scapy.all import *
 
+"""
+here all important infos of a capture are encapsulated
+"""
 class _Capture:
 
     def __init__(self, id: int, channel: int, interface: str, gps_tracking: bool):
@@ -18,8 +21,9 @@ class _Capture:
             path = os.path.join(app.root_path, "static", "captures", str(id), "gps.txt")
             self.gps_route = GPSRoute(str(id), path)
 
-        path = os.path.join(app.root_path, "static", "captures", str(id), "cap.pcap")
-        self.packet_writer = PcapWriter(path,
+        self.dirpath = os.path.join(app.root_path, "static", "captures", str(id))
+        self.pcap_filepath = os.path.join(self.dirpath, "cap.pcap")
+        self.packet_writer = PcapWriter(pcap_filepath,
                                         append=True, sync=True)
         
         self.num_packets = 0
@@ -65,12 +69,16 @@ class _Capture:
 
         print(f"[+] Capture {self.id} Stopped")
 
+    def add_and_store(frame):
+        self.packet_writer.write(pkt)
     
     def get_num_packets(self):
         return self.num_packets
 
+#END OF CLASS Capture
 
-#TODO: use redis for multiple captures using many WIFI-Adapters
+
+
 captures = dict()
 def start_capture(id: int, channel: int, interface: str, gps_tracking: bool):
     if captures.get(id):
@@ -96,22 +104,5 @@ def get_capture(id):
     
 def get_running_ids():
     return list(captures.keys())
-
-def callback(frame):
-    print(frame)
-
-
-def test_capture():
-    start_capture("blub", 11, interface="wlan0mon")
-    start_capture("2", 2, interface="wlan0mon")
-    stop_capture("blub")
-    stop_capture("2")
-
-def test_interface():
-    iface = Interface("wlan1")
-    iface.enable_monitor_mode()
-    iface.set_channel(7)
-
-if __name__ == "__main__":
-    test_interface()
+    
     

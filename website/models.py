@@ -5,11 +5,13 @@ from flask import current_app
 from flask_login import UserMixin
 from website import db, login_manager
 
+
+#USER RELATED
+
 #used by login_manager to login user
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
 
 #also extending UserMixin from flask_login allows passing a User object to login_user
 class User(db.Model, UserMixin):
@@ -23,6 +25,12 @@ class User(db.Model, UserMixin):
         return f"User('{self.id}', '{self.username}')"
 
 
+#CAPTURE RELATED
+class CaptureState:
+    FAILED = 1
+    RUNNING = 2
+    COMPLETED = 3
+
 class Capture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(128), nullable=False)
@@ -31,6 +39,8 @@ class Capture(db.Model):
     filename = db.Column(db.String(20), nullable=False, unique=True)
     channel = db.Column(db.Integer, nullable=False)
     gps = db.Column(db.Boolean, nullable=False, default=True)
+
+    state = db.Column(db.Integer, nullable=False, default=CaptureState.FAILED)
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 

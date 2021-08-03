@@ -4,10 +4,11 @@ from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureForm
-from website.models import User, Capture
+from website.models import User, Capture, CaptureState
 import website.interfaces
 
-from website.hw import get_capture, start_capture, stop_capture, get_running_ids
+import website.capture.capture as capture
+from website.capture.behavior import CaptureAllBehavior
 import website.aps as aps
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
@@ -28,7 +29,7 @@ from scapy.all import *
 @app.route("/")
 @login_required
 def home(path=""):
-    running_ids = get_running_ids()
+    running_ids = capture.get_running_ids()
     running_ids.sort()
     
     running_captures = [c for c in current_user.captures if c.id in running_ids]
@@ -146,6 +147,9 @@ def update_oui():
     flash("Successfull update", "success")
     return redirect(url_for("settings"))
 
+
+#GPS SECTION
+
 @app.route("/gps/start")
 @login_required
 def gps_start():
@@ -168,20 +172,9 @@ def gps_show():
     running = gps.gps_is_running()
     return render_template("gps.html", available=available, lat=lat, lon=lon, running=running)
 
-@app.route("/capture/<int:id>/start")
-@login_required
-def capture_start(id):
-    title = request.args.get("title")
-    gps_tracking = request.args.get("gps_tracking")
-    if not title: title = ""
-    if not gps_tracking: gps_tracking = false
 
-    try:
-        start_capture(id, 11, interfaces.monitor_iface.get_name(), gps_tracking)
-        flash(f"Capture {title} started", "success")
-    except ValueError as e:
-        flash(f"Capture {title} already running.", "danger")
-    return redirect(url_for("home"))
+
+#CAPTURE SECTION
 
 @app.route("/capture/<int:id>/stop")
 @login_required
@@ -190,7 +183,10 @@ def capture_stop(id):
     if not title: title = ""
     
     try:
-        stop_capture(id)
+        capture.stop_capture(id)
+        c = Capture.query.get(id)
+        c.state = CaptureState.COMPLETED
+        db.session.commit()
         flash(f"Capture {title} stopped", "success")
     except ValueError as e:
         flash(f"Capture {title} can't be stopped since it does not exist.", "danger")
@@ -201,7 +197,7 @@ def capture_stop(id):
 @login_required
 def capture_get(id):
     try:
-        c = get_capture(id) 
+        c = capture.get_capture(id) 
     except ValueError as e:
         flash(str(e), "danger")
         return redirect(url_for("home"))
@@ -211,7 +207,6 @@ def capture_get(id):
 @app.route("/capture/<int:id>/show")
 def capture_show(id):
     try:
-        #c = get_capture(id) 
         capture = Capture.query.get(id)
         return render_template("capture.html", title="Show Capture", capture=capture)
     except ValueError as e:
@@ -240,7 +235,6 @@ def gen_filename(title):
             break
     return os.path.join(app.root_path, "static", "captures", fn)
 
-
 @app.route("/capture/new", methods=["GET", "POST"])
 @login_required
 def new_capture():
@@ -251,23 +245,46 @@ def new_capture():
 
     form = CaptureForm()
     if form.validate_on_submit():
-        #add to db
-        title = form.title.data
-        filename = gen_filename(title)
-        gps_tracking = form.gpsTracking.data
-        cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id,
-                        gps=form.gpsTracking.data, channel=form.channel.data)
-        db.session.add(cap)
-        db.session.commit()
-
-        #add directory
-        path = os.path.join(app.root_path, "static", "captures", str(cap.id))
-        os.makedirs(path)
-
-        return redirect(url_for("capture_start", id=cap.id, title=title, gps_tracking=gps_tracking))
+        _create_and_start_capture(form)
+        return redirect(url_for("home"))
 
     gps_available = gps.is_gps_available()
     return render_template("add_capture.html", title="Add Capture", form=form, gps_available=gps_available)
+
+"""
+called by new_capture
+"""
+def _create_and_start_capture(form: CaptureForm):
+    #add to db
+    title = form.title.data
+    filename = gen_filename(title)
+    gps_tracking = form.gpsTracking.data
+    channel=form.channel.data
+    #remove channel out of Capture model
+    cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id,
+                    gps=form.gpsTracking.data, channel=channel)
+    db.session.add(cap)
+    db.session.commit()
+
+    #add directory
+    path = os.path.join(app.root_path, "static", "captures", str(cap.id))
+    os.makedirs(path)
+
+    #create captureBehavior and start capture
+    try:
+        id = cap.id
+        interface = interfaces.monitor_iface #TODO: change form so this is dynamic in the future
+        capture_behavior = CaptureAllBehavior(channel, gps_tracking) #TODO
+        capture.start_capture(id, interface, capture_behavior)
+        cap.state = CaptureState.RUNNING
+        db.session.commit()
+        flash(f"Capture {title} started", "success")
+    except ValueError as e:
+        #capture state in DB is FAILED by default when created, so we don't need to set this here
+        flash(f"Capture {title} already running.", "danger")
+    
+    return #attention: this function returns to new_capture
+
 
 @app.route("/capture/<int:id>/delete")
 @login_required
@@ -285,8 +302,45 @@ def capture_delete(id: int):
     else:
         flash(f"Capture does not exist.", "danger")
     return redirect(url_for("home")) 
-    
 
+# #WARDRIVING
+# @app.route("/wardriving")
+# @login_required
+# def wardriving():
+# #is an interface with monitor mode available?
+#     if not interfaces.monitor_interface_available():
+#         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+#         return redirect(url_for("settings"))
+    
+#     if not gps.is_gps_available():
+#         if not gps.gps_is_running():
+#             flash("You have to enable GPS before you can do that.", "danger")
+#             return redirect(url_for("settings"))
+#         else:
+#             flash("Altough your GPS is enabled, you have no connection. Wait 'till gps is available.", "danger")
+#             return redirect(url_for("gps_show"))
+
+#     running = wardriving.is_running()
+#     return render_template("wardriving.html", title="Wardriving", running=running)
+
+# @app.route("/wardriving/start")
+# @login_required
+# def wardriving_start():
+#     try:
+#         wardrivingstart_scan(interfaces.monitor_iface.get_name())
+#         flash("Starting wardriving", "success")
+#     except ValueError as e:
+#         flash(str(e), "danger")
+#     return redirect(url_for("wardriving")) 
+
+# @app.route("/wardriving/stop")
+# @login_required
+# def wardriving_stop():
+#     stop_scan()
+#     flash("Stopped wardriving.", "success")
+#     return redirect(url_for("wardriving")) 
+
+#ACCESS POINT DETECTION
 @app.route("/detect/start")
 @login_required
 def detect_start():
