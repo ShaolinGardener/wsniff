@@ -60,7 +60,7 @@ class Capture:
         #stop capturing of frames
         self._stop.set()
         self.t.join()
-
+        
         #call hook
         self.capture_behavior.stop_capture()
 

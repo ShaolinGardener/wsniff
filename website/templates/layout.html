@@ -13,7 +13,7 @@
     <!-- CSS only -->
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">-->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/leaflet.css') }}">
 
     <!-- own css -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
@@ -47,7 +47,7 @@
               <!-- navbar left side -->
               <div class="navbar-nav mr-auto">
                 <a class="nav-item nav-link" href=" {{ url_for('detect_aps') }}">Detect APs</a>
-                <a class="nav-item nav-link" href=" {{ url_for('new_capture') }}">New Capture</a>
+                <a class="nav-item nav-link" href=" {{ url_for('new_capture_selection') }}">New Capture</a>
                 <a class="nav-item nav-link" href=" {{ url_for('gps_show') }}">GPS</a>
               </div>
 

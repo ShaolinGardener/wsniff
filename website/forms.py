@@ -4,15 +4,20 @@ from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 
 from website.models import User
 
+#Related to capture process
 class CaptureForm(FlaskForm):
     title = StringField("Name", validators=[DataRequired(), Length(min=2, max=256)])
     desc = StringField("Description", validators=[])
+    submit = SubmitField("Start Capture")
+
+class CaptureAllForm(CaptureForm):
     gpsTracking = BooleanField(label="GPS Tracking")
     channel = SelectField(label="Channel", choices=list(range(1, 14)), coerce=int, validate_choice=True)
 
-    submit = SubmitField("Start Capture")
+class WardrivingForm(CaptureForm):
+    pass
 
-
+#user authetication
 min_password_length = 8
 
 class RegistrationForm(FlaskForm):

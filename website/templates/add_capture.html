@@ -7,6 +7,7 @@
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
             <legend class="border-bottom mb-4">Enter information</legend>
+            <!-- title -->
             <div class="form-group">
                 {{ form.title.label(class='form-control-label') }}
 
@@ -21,6 +22,8 @@
                     {{ form.title(class='form-control form-control-lg') }}
                 {% endif %}
             </div>
+    
+            <!-- description -->
             <div class="form-group">
                 {{ form.desc.label(class='form-control-label') }}
 
@@ -35,10 +38,14 @@
                     {{ form.desc(class='form-control form-control-lg') }}
                 {% endif %}
             </div>
+
+            {% if capture_type == 1 %} <!--TODO: make this better-->
+            <!-- channel -->
             <div class="form-group">
                 {{ form.channel.label(class='form-control-label') }}
                 {{ form.channel(class='form-control') }}
-            </div>
+            </div><!-- END channel -->
+
             <!-- GPS checkbox -->
             <div class="form-check">
                 {% if gps_available %}
@@ -51,7 +58,8 @@
                 {% if not gps_available %}
                     <div><small class="text-muted">No GPS available. Activate it in the settings or wait until a connection is established.</small></div>
                 {% endif %}
-            </div>
+            </div> <!-- END GPS checkbox -->
+            {% endif %}
         </fieldset>
         <div class="form-group">
             {{ form.submit(class='btn btn-outline-info') }}

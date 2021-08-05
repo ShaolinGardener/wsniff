@@ -3,12 +3,12 @@ from flask import render_template, url_for, flash, redirect, request, jsonify, s
 from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
-from website.forms import RegistrationForm, LoginForm, CaptureForm
-from website.models import User, Capture, CaptureState
+from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm
+from website.models import User, Capture, CaptureState, CaptureType
 import website.interfaces
 
 import website.capture.capture as capture
-from website.capture.behavior import CaptureAllBehavior
+from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior
 import website.aps as aps
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
@@ -33,8 +33,11 @@ def home(path=""):
     running_ids.sort()
     
     running_captures = [c for c in current_user.captures if c.id in running_ids]
-    old_captures = [c for c in current_user.captures if c.id not in running_ids]
-    old_captures.sort(key= lambda cap: cap.date_created, reverse=True)
+    
+    old_captures_capture_all = [c for c in current_user.captures if c.id not in running_ids and c.type == CaptureType.CAPTURE_ALL]
+    old_captures_capture_all.sort(key= lambda cap: cap.date_created, reverse=True)
+    old_captures_wardriving = [c for c in current_user.captures if c.id not in running_ids and c.type == CaptureType.WARDRIVING]
+    old_captures_wardriving.sort(key= lambda cap: cap.date_created, reverse=True)
 
     #following code only made sense before user authetication was implemented
     #running_captures = Capture.query.filter(Capture.id.in_(running_ids)).all()
@@ -42,7 +45,7 @@ def home(path=""):
     #db.session.commit()
 
     interface_available = interfaces.monitor_interface_available()
-    return render_template("home.html", title="Home", running=running_captures, old=old_captures, interface_available=interface_available)
+    return render_template("home.html", title="Home", interface_available=interface_available, running=running_captures, old_capture_all=old_captures_capture_all, old_wardriving=old_captures_wardriving)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -235,6 +238,17 @@ def gen_filename(title):
             break
     return os.path.join(app.root_path, "static", "captures", fn)
 
+
+@app.route("/capture/new/select")
+@login_required
+def new_capture_selection():
+    #is an interface with monitor mode available?
+    if not interfaces.monitor_interface_available():
+        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+        return redirect(url_for("settings"))
+
+    return render_template("add_capture_overview.html", title="Add Capture")
+
 @app.route("/capture/new", methods=["GET", "POST"])
 @login_required
 def new_capture():
@@ -243,26 +257,48 @@ def new_capture():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
         return redirect(url_for("settings"))
 
-    form = CaptureForm()
+    try: 
+        capture_type = int(request.args.get("capture_type"))
+    except:
+        pass
+    if not capture_type: capture_type = 1
+
+    if capture_type == CaptureType.CAPTURE_ALL:
+        capture_type = CaptureType.CAPTURE_ALL
+        form = CaptureAllForm()
+    elif capture_type == CaptureType.WARDRIVING:
+        capture_type = CaptureType.WARDRIVING
+        form = WardrivingForm()
+    else: #default 
+        raise Exception("[-] This should not be possible because capture_type should have been set to CaptureAll by default")
+
     if form.validate_on_submit():
-        _create_and_start_capture(form)
+        _create_and_start_capture(capture_type, form)
         return redirect(url_for("home"))
 
     gps_available = gps.is_gps_available()
-    return render_template("add_capture.html", title="Add Capture", form=form, gps_available=gps_available)
+
+    return render_template("add_capture.html", title="Add Capture", capture_type=capture_type, form=form, gps_available=gps_available)
 
 """
 called by new_capture
 """
-def _create_and_start_capture(form: CaptureForm):
+def _create_and_start_capture(capture_type: CaptureType, form):
     #add to db
     title = form.title.data
     filename = gen_filename(title)
-    gps_tracking = form.gpsTracking.data
-    channel=form.channel.data
+   
+
+    if capture_type == CaptureType.CAPTURE_ALL:
+        channel = form.channel.data
+        gps_tracking = form.gpsTracking.data
+    else:
+        channel = None
+        gps_tracking = True
+    
     #remove channel out of Capture model
     cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id,
-                    gps=form.gpsTracking.data, channel=channel)
+                    gps=gps_tracking, channel=channel, type=capture_type)
     db.session.add(cap)
     db.session.commit()
 
@@ -271,10 +307,18 @@ def _create_and_start_capture(form: CaptureForm):
     os.makedirs(path)
 
     #create captureBehavior and start capture
+    id = cap.id
+    interface = interfaces.monitor_iface
+
+    if capture_type == CaptureType.CAPTURE_ALL:
+        capture_behavior = CaptureAllBehavior(channel, gps_tracking)
+    elif capture_type == CaptureType.WARDRIVING:
+        capture_behavior = MapAccessPointsBehavior()
+    else:
+        raise Exception("[-] This should not be possible.")
+    
+    #actually start capture
     try:
-        id = cap.id
-        interface = interfaces.monitor_iface #TODO: change form so this is dynamic in the future
-        capture_behavior = CaptureAllBehavior(channel, gps_tracking) #TODO
         capture.start_capture(id, interface, capture_behavior)
         cap.state = CaptureState.RUNNING
         db.session.commit()
@@ -339,6 +383,42 @@ def capture_delete(id: int):
 #     stop_scan()
 #     flash("Stopped wardriving.", "success")
 #     return redirect(url_for("wardriving")) 
+
+
+#WARDRIVE capture
+#read data from file
+def load_from_file(filepath):
+    f = open(filepath, "r")
+    data = list()
+
+    line = f.readline()
+    while line:
+        t = line.strip().split(";")
+        ap = {
+            "bssid": t[1],
+            "ssid": t[2],
+            "channel": t[3],
+            "signal_strength": t[4],
+            "vendor": t[5],
+            "location": [t[6], t[7]]
+        }
+        data.append(ap)
+        line = f.readline()
+    f.close()
+    return json.dumps(data)
+
+@app.route("/wardrive/<int:id>")
+@login_required
+def wardrive_capture_show(id):
+    try:
+        capture = Capture.query.get(id)
+        filepath = os.path.join(app.root_path, "static", "captures", str(capture.id), "wardrive.txt")
+        aps_json = load_from_file(filepath)
+        return render_template("wardrive_map.html", title="Show Wardrive", capture=capture, aps_json=aps_json)
+    except ValueError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("home")) 
+
 
 #ACCESS POINT DETECTION
 @app.route("/detect/start")

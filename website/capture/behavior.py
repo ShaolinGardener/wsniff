@@ -4,7 +4,8 @@ from time import sleep, time
 
 from website import app
 from website.interfaces import Interface
-from website.gps import GPSRoute
+import website.gps as gps
+import website.oui as oui
 
 from scapy.all import *
 
@@ -77,20 +78,8 @@ class CaptureAllBehavior(CaptureBehavior):
         self.packet_writer.write(frame)
         self.capture.num_packets += 1
         
-"""
-can be used to create a map of access points / wardriving
-"""
-class MapAccessPointsBehavior(CaptureBehavior):
-    
-    def __init__(self):
-        self.filepath = os.join(self.capture.dirpath, "wardrive.txt")
-       
-        #bssid as unique identifier, AccessPoint object as value
-        # bssid: str -> ap: AcessPoint
-        self.aps = dict() #all APs that are uncovered 
-        self._running = Event() #used to synchronize
-
-    class AccessPoint():
+#BEGIN OF MapAccessPointsBehavior
+class _AccessPoint():
         def __init__(self, bssid, ssid, channel):
             self.bssid = bssid
             self.ssid = ssid
@@ -115,10 +104,24 @@ class MapAccessPointsBehavior(CaptureBehavior):
         def __str__(self):
             return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
 
+"""
+can be used to create a map of access points / wardriving
+"""         
+class MapAccessPointsBehavior(CaptureBehavior):
+    
+    def __init__(self):
+        #bssid as unique identifier, AccessPoint object as value
+        # bssid: str -> ap: AcessPoint
+        self.aps = dict() #all APs that are uncovered 
+        self._running = Event() #used to synchronize
+
+
     def start_capture(self):
+        self.filepath = os.path.join(self.capture.dirpath, "wardrive.txt")
+
         #hop through channels - hoppin thread
         self._running.set()
-        interface = self.capture.interface
+        interface = self.capture.interface.get_name()
         hopping_thread = Thread(target=self.hopper, args=(interface, ), name="hopper")
         self.hopping_thread = hopping_thread #we need a reference to stop thread later on
         hopping_thread.daemon = True
@@ -127,7 +130,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
     def hopper(self, iface):
         channel = 1
         stop_hopper = False
-        while _running.is_set():
+        while self._running.is_set():
             sleep(0.25)
             os.system(f"sudo iwconfig {iface} channel {channel}")
             #print(f"[*] current channel {channel}")
@@ -136,7 +139,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
             if dig != channel:
                 channel = dig
 
-    def handle_packet(self, capture, frame): 
+    def handle_packet(self, frame): 
         self.capture.num_packets += 1
 
         if frame.haslayer(Dot11Beacon):
@@ -147,7 +150,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
             if bssid not in self.aps:
                 ssid = frame.getlayer(Dot11Elt).info.decode("utf-8")
                 channel = frame.getlayer(Dot11Elt).channel
-                ap = AccessPoint(bssid, ssid, channel)
+                ap = _AccessPoint(bssid, ssid, channel)
 
                 if frame.haslayer(RadioTap):   
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
@@ -171,9 +174,12 @@ class MapAccessPointsBehavior(CaptureBehavior):
         for bssid in self.aps:
             #better to read here than f"-Syntax
             ap = self.aps[bssid]
-            f.write("{time};{bssid};{ssid};{channel};{vendor};{lat};{lon}\n".format(time=ap.t_last_seen, bssid=ap.bssid, ssid=ap.ssid, channel=ap.channel, vendor=oui.lookup(ap.bssid), lat=ap.lat, lon = ap.lon))
+            line = f"{ap.t_last_seen};{ap.bssid};{ap.ssid};{ap.channel};{ap.signal_strength};{oui.lookup(ap.bssid)};{ap.lat};{ap.lon}\n" 
+            f.write(line)
+
         f.close()
         self.aps.clear()
+        print("end bahavior")
 
 #END OF CAPTURE BAHAVIOR CLASSES
 

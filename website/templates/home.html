@@ -38,30 +38,68 @@
     {% endfor %}
 </div><!-- end running captures -->
 
-<div>
+<div class="mt-4">
     <h2>Finished Captures</h2>
-    {% for capture in old %}
-      {% if capture.id % 2 == 0 %}
-          <div class="row">
-      {% endif %}
-        <div class="col-sm-6">
-            <div class="card">
-                <div class="card-header text-muted">
-                    Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
-                    Id: {{ capture.id }}
-                    GPS: {{ capture.gps }}
-                </div>
-                <div class="card-body">
-                <h5 class="card-title">{{ capture.title }}</h5>
-                <p class="card-text">{{ capture.desc }}</p>
-                <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info mb-1">Download</a>
-                <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger mb-1">Delete capture</a>
-                </div>
-            </div>
-        </div>
-      {% if capture.id % 2 == 1 %}
-        </div>
-      {% endif %}
-    {% endfor %} 
+    
+    <!-- Capture All captures -->
+    {% if old_capture_all %}
+    <div class="mt-2">
+      <h3>Capture All Mode</h3>
+      {% for capture in old_capture_all %}
+        {% if capture.id % 2 == 0 %}
+            <div class="row">
+        {% endif %}
+          <div class="col-sm-6">
+              <div class="card">
+                  <div class="card-header text-muted">
+                      Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
+                      Id: {{ capture.id }}
+                      GPS: {{ capture.gps }}
+                  </div>
+                  <div class="card-body">
+                  <h5 class="card-title">{{ capture.title }}</h5>
+                  <p class="card-text">{{ capture.desc }}</p>
+                  <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info mb-1">Download</a>
+                  <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger mb-1">Delete capture</a>
+                  </div>
+              </div>
+          </div>
+        {% if capture.id % 2 == 1 %}
+          </div>
+        {% endif %}
+      {% endfor %} 
+    </div> <!-- end capture all captures -->
+    {% endif %}
+
+    <!-- Capture All captures -->
+    {% if old_wardriving %}
+    <div class="mt-2">
+      <h3>Wardriving Mode</h3>
+      {% for capture in old_wardriving %}
+        {% if capture.id % 2 == 0 %}
+            <div class="row">
+        {% endif %}
+          <div class="col-sm-6">
+              <div class="card">
+                  <div class="card-header text-muted">
+                      Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
+                      Id: {{ capture.id }}
+                      GPS: {{ capture.gps }}
+                  </div>
+                  <div class="card-body">
+                  <h5 class="card-title">{{ capture.title }}</h5>
+                  <p class="card-text">{{ capture.desc }}</p>
+                  <a href="{{ url_for('wardrive_capture_show', id=capture.id) }}" class="btn btn-info mb-1">Show Result</a>
+                  <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger mb-1">Delete capture</a>
+                  </div>
+              </div>
+          </div>
+        {% if capture.id % 2 == 1 %}
+          </div>
+        {% endif %}
+      {% endfor %} 
+    </div> <!-- end capture all captures -->
+    {% endif %}
+    
 </div>
 {% endblock content %}

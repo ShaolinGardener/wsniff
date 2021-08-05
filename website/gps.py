@@ -105,11 +105,29 @@ class GPSRoute():
         res += end
         return res
 
+#END OF CLASS GPSRoute
+
+
+
 _stop_event = Event()
 _stop_event.set()
 _lock = Lock()
 _current_position = (0.0, 0.0)
 _gps_available = False
+
+
+def gps_is_running():
+    return not _stop_event.is_set()
+    
+def is_gps_available():
+    global _gps_available
+    return _gps_available
+
+def get_gps_data():
+    _lock.acquire()
+    lat, lon = _current_position[0], _current_position[1]
+    _lock.release()
+    return lat, lon
 
 def _read_data():
     global _current_position
@@ -147,33 +165,31 @@ def _read_data():
             print(f"Parse error: {e}")
             continue
 
-def is_gps_available():
-    global _gps_available
-    return _gps_available
 
-def get_gps_data():
-    _lock.acquire()
-    lat, lon = _current_position[0], _current_position[1]
-    _lock.release()
-    return lat, lon
-
-
+gps_thread = None
 def start_gps_tracking():
+    global gps_thread #because new thread instance is assigned to this variable
+    if gps_is_running():
+        print("[*] Tried starting gps thread although there is already one running.")
     _stop_event.clear()
     
     print("[*] Starting GPS Thread")
-    thread = Thread(target=_read_data, name="gps tracker")
-    thread.daemon = True
-    thread.start()
+    gps_thread = Thread(target=_read_data, name="gps tracker")
+    gps_thread.daemon = True
+    gps_thread.start()
 
 def stop_gps_tracking():
     global _gps_available
     _stop_event.set()
+    gps_thread.join()
+    print("[+] Stopped GPS Thread")
     _gps_available = False
 
 def gps_is_running():
     return not _stop_event.is_set()
 
+
+#some tests
 def test_tracking():
     print("[*] Starting ... there should be some output")
     start_gps_tracking()
