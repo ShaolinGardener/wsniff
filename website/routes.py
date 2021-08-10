@@ -3,7 +3,7 @@ from flask import render_template, url_for, flash, redirect, request, jsonify, s
 from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
-from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm
+from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm
 from website.models import User, Capture, CaptureState, CaptureType
 import website.interfaces
 
@@ -14,6 +14,7 @@ from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
 import website.interfaces as interfaces
 import website.oui as oui
+from website.settings import WPA_SUPPLICANT_BACKUP_PATH
 
 from sqlalchemy import desc
 import secrets
@@ -104,11 +105,17 @@ def settings():
     gps_running = gps.gps_is_running()
     return render_template("settings.html", title="Settings", interfaces=ifaces, gps_running=gps_running)
 
-@app.route("/shutdown")
+@app.route("/settings/reboot")
+def reboot():
+    str_shutdown = "reboot"
+    subprocess.run(str_shutdown, shell=True, check=True)
+    return render_template("settings.html", title="Settings", interfaces=ifaces) #should not be executed
+
+@app.route("/settings/shutdown")
 def shutdown():
     str_shutdown = "shutdown -h now"
     subprocess.run(str_shutdown, shell=True, check=True)
-    return render_template("settings.html", title="Settings", interfaces=ifaces)
+    return render_template("settings.html", title="Settings", interfaces=ifaces) #should not be executed
 
 @app.route("/settings/interfaces/<string:interface>/monitor/activate")
 @login_required
@@ -462,3 +469,33 @@ def get_stations(bssid, ssid):
     vendors = [oui.lookup(station) for station in stations]
     size = len(stations)
     return render_template("ap.html", title="Access Point", ssid=ssid, stations=stations, vendors=vendors, size=size)
+
+
+@app.route("/settings/wifi-external", methods=["GET", "POST"])
+@login_required
+def configure_external_wifi():
+
+    form = ExternalWiFiForm()
+    if form.validate_on_submit():
+        ssid = form.ssid.data
+        password = form.password.data
+        
+        #check if copy of original file does not yes exist (equivalent to configuring the first time)
+        wpa_supplicant_path = "/etc/wpa_supplicant/wpa_supplicant.conf"
+        backup_path = WPA_SUPPLICANT_BACKUP_PATH
+        if not os.path.exists(backup_path):
+            #create backup
+            shutil.copyfile(wpa_supplicant_path, backup_path)
+        
+        #take backup file and add information to access external wifi
+        shutil.copyfile(backup_path, wpa_supplicant_path) #original file
+        network_info = f"""network={{\n\tssid="{ssid}"\n\tpsk="{password}"\n\tkey_mgmt=WPA-PSK\n}}\n""" #you need double curly brackets to escape them in format-strings
+        with open(wpa_supplicant_path, "a") as f: #now add new information to file
+            f.write(network_info)
+
+
+        flash(f"New configuration was saved.", "success")
+        return redirect(url_for("settings"))
+    
+    #displayed 
+    return render_template("configure_external_wifi.html", title="Configure external wifi", form=form)

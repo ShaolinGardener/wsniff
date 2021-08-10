@@ -35,6 +35,14 @@
   {% endif %}
 </div>
 
+<!-- external wifi access -->
+<div class="mt-4 text-justify">
+  <h2>WiFi-Access</h2>
+  <p>Configure your device so it can access an external WiFi-network. Needed for updates and displaying maps.</p>
+  <a class="btn btn-outline-primary" href="{{ url_for('configure_external_wifi') }}">Configure access</a>
+</div>
+
+
 <!-- OUI -->
 <div class="mt-4 text-justify">
   <h2>OUI</h2>
@@ -46,6 +54,9 @@
 </div>
 
 <div class="mt-5">
+  <a class="btn btn-danger btn-block" href="{{ url_for('reboot') }}">Reboot</a>
+</div>
+<div class="mt-1">
   <a class="btn btn-danger btn-block" href="{{ url_for('shutdown') }}">Shutdown device</a>
 </div>
 {% endblock content %}

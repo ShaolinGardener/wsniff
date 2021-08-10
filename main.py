@@ -14,7 +14,7 @@ def setup():
 
 def main():
     setup()
-    app.run(host="0.0.0.0", threaded=True, debug=True)
+    app.run(host="0.0.0.0", threaded=True, debug=True, port=80)
 
 if __name__ == "__main__":
     main()

@@ -42,3 +42,9 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember me")
     submit = SubmitField("Login")
+
+
+class ExternalWiFiForm(FlaskForm):
+    ssid = StringField("SSID of external network", validators = [DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Save configuration")

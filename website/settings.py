@@ -1,6 +1,8 @@
 INTERFACE = "wlan1mon" #wlan1mon en0
 GPS_SERIAL = "/dev/serial0" #/dev/serial0
 
+WPA_SUPPLICANT_BACKUP_PATH = "/etc/wpa_supplicant/wpa_supplicant.conf.wsniff.backup"
+
 FLASK_THREADED = True
 FLASK_DEBUG = True #TODO: change for production
 
