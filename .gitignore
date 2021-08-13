@@ -2,11 +2,11 @@
 
 
 #custom
-config.py # contains passwords etc!
 *.db #do not upload our database
 db.sqlite
 *.css.map #created by sass - this only leads to merge conflicts
 captures/
+tmp/
 ### VisualStudioCode ###
 .vscode/*
 
@@ -22,8 +22,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-*.so
 
 # Distribution / packaging
 .Python

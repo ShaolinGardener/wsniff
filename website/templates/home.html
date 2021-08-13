@@ -19,7 +19,7 @@
   <h2>Running Captures</h2>
     {% if not running %}
       <p>Currently there is no running capture</p>
-      <p class="text-muted">Want to <a href="{{url_for('new_capture')}}">start one now</a>?</p>
+      <p class="text-muted">Want to <a href="{{url_for('new_capture_selection')}}">start one now</a>?</p>
     {% endif %}
     {% for capture in running %}
     <div class="card">

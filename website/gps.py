@@ -1,6 +1,4 @@
-import io, json
-
-import pynmea2
+import io, json, re
 import serial
 from datetime import datetime
 
@@ -13,7 +11,8 @@ from threading import Thread, Event, Lock
 ser = serial.Serial(GPS_SERIAL, 9600, timeout=5.0) #'/dev/serial0'
 
 #nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
-sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
+#latin 1 because it seems to have problems with utf-8
+sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser), encoding="latin1")
 
 print("[+] Initializing gps module")
 
@@ -129,6 +128,39 @@ def get_gps_data():
     _lock.release()
     return lat, lon
 
+"""
+returns if this is a valid gga message or if it has been currupted
+raises ChecksumException in case the message has been corrupted
+"""
+class ChecksumException(Exception):
+    pass
+
+def check_gga_checksum(line: str, given_checksum: str):
+    #checksum is defined as XOR of all characters in the message after '$' to the beginning of the checksum (*) and is represented as a hex number
+    #see protocol: http://navspark.mybigcommerce.com/content/NMEA_Format_v0.1.pdf
+    relevant_for_checksum = line[1:line.rfind("*")]
+    bytes = list(map(ord, relevant_for_checksum)) #bytes of line
+    computed_checksum = bytes[0]
+    for i in range(1, len(bytes)):
+        computed_checksum = computed_checksum ^ bytes[i]
+    
+    #check if checksums match
+    if int(given_checksum, 16) == computed_checksum:
+        return True
+    raise ChecksumException("[-] Checksum of GGA message was incorrect")
+
+"""
+returns gps data in float format (which can be pasted in google for example and is needed for leaflet maps)
+found this code on github:
+Link:       https://github.com/Knio/pynmea2/blob/2dab8f59045365463a33013cd1f95140943193fd/pynmea2/nmea_utils.py#L33
+Licence:    https://github.com/Knio/pynmea2/blob/2dab8f59045365463a33013cd1f95140943193fd/LICENSE
+"""
+def convert(coordinate):
+    if not coordinate or coordinate == "0":
+        return 0.0
+    d, m = re.match(r'^(\d+)(\d\d\.\d+)$', coordinate).groups()
+    return float(d) + float(m) / 60
+
 def _read_data():
     global _current_position
     global _gps_available
@@ -139,32 +171,32 @@ def _read_data():
             line = sio.readline()
             #print(line)
             
-            if line.startswith("$GNGGA"):  
-                gpsdata = pynmea2.parse(line)  
-                num_sats = gpsdata.num_sats #str
-                if int(num_sats) > 0: 
+            if line.startswith("$GNGGA"):
+                #parse GNGGA message according to protocol (http://navspark.mybigcommerce.com/content/NMEA_Format_v0.1.pdf)
+                data = line.split(",")
+                #time: UTC of position in hhmmss.sss format, lat and lon: str, num_sats: number of available satellites, checksum: 2 hex characters
+                time, lat, lon, num_sats, checksum = data[1], data[2], data[4], int(data[7]), data[12][1:]
+                
+                if num_sats > 0: 
                     _gps_available = True
 
-                    lat, lon = gpsdata.latitude, gpsdata.longitude
-                    time = gpsdata.timestamp #type: datetime.time class
-                    print(f"{time} {num_sats} {gpsdata.altitude}")
+                    lat, lon = convert(lat), convert(lon)
+                    print(f"time:{time} sats:{num_sats} lat:{lat} lon:{lon}")
                     _lock.acquire()
                     _current_position = lat, lon
                     _lock.release()
 
-                    #uncommenting the following 3 lines you can copy the output into google and look up the location there
-                    #lat = '%02d°%02d′%07.4f″' % (gpsdata.latitude, gpsdata.latitude_minutes, gpsdata.latitude_seconds)
-                    #lon = '%02d°%02d′%07.4f″' % (gpsdata.longitude, gpsdata.longitude_minutes, gpsdata.longitude_seconds)
-                    #print(f"{lat} {lon}")
                 else:
                     _gps_available = False
         except serial.SerialException as e:
             print(f"Device error: {e}")
             break
-        except pynmea2.ParseError as e:
+        except ChecksumException as e:
             print(f"Parse error: {e}")
             continue
-
+        except UnicodeDecodeError as e:
+            print(f"Unicode error: {e}")
+            continue
 
 gps_thread = None
 def start_gps_tracking():
@@ -228,5 +260,8 @@ def test_track():
     sleep(5)
     route.stop_capture()
 
+def test_checksum():
+    return check_gga_checksum("$GNGGA,160112.000,4936.10701,N,01100.40540,E,1,08,1.5,330.8,M,47.2,M,,*48", "48")
+
 if __name__ == "__main__":
-    test_track()
+    test_checksum()

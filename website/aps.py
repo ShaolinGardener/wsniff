@@ -3,7 +3,7 @@ from time import sleep
 import time
 import random, os
 import website.oui as oui
-from website.dot11.frame import Frame 
+from website.frame import Frame 
 
 from scapy.all import *
 
@@ -39,6 +39,66 @@ class Station:
         self.signal_strength = 0
 
         self.t_last_seen = time.time()
+
+class Frame:
+    """
+    Format that is more intuitive to use (also reduces coupling because we are now more independant from other libraries, so 
+    it is easer to switch them)
+    """
+
+    TO_DS = 0x1
+    FROM_DS = 0x2
+    DOT11_FRAME_TYPE_MANAGEMENT = 0
+    DOT11_FRAME_TYPE_CONTROL = 1
+    DOT11_FRAME_TYPE_DATA = 2
+
+    def __init__(self, frame, channel=0, iface=None):
+        self.frame = frame
+        
+        self.bssid = Nonde
+        self.ssid = None
+        self.signal_strength = 0
+        self.channel = channel
+        self.iface = iface
+        self.frame_bytes = len(frame)
+
+        #FC: frame control
+        to_ds = frame.FCfield & Frame.TO_DS != 0
+        from_ds = frame.FCfield & Frame.FROM_DS != 0
+        if to_ds and from_ds:
+            self.dst = frame.addr3
+            self.src = frame.addr4
+            self.macs = {frame.addr1, frame.addr2, frame.addr3, frame.addr4}
+        elif to_ds:
+            self.src = frame.addr2
+            self.dst = frame.addr3
+            self.bssid = frame.addr1
+            self.macs = {frame.addr2, frame.addr3}
+        elif from_ds:
+            self.src = frame.addr3
+            self.dst = frame.addr1
+            self.bssid = frame.addr2
+            self.macs = {frame.addr1, frame.addr3}
+        else:
+            self.dst = frame.addr1
+            self.src = frame.addr2
+            self.bssid = frame.addr3
+            self.macs = {frame.addr1, frame.addr2}
+
+        if (frame.haslayer(scapy.Dot11Elt) and
+                (frame.haslayer(scapy.Dot11Beacon) or frame.haslayer(scapy.Dot11ProbeResp))):
+
+            try:
+                self.ssid = frame[scapy.Dot11Elt].info.decode().replace("\x00", "[none]")
+            except UnicodeDecodeError:
+                # Only seems to happen on macOS - probably some pcap decoding bug
+                self.ssid = None
+
+        if frame.haslayer(scapy.RadioTap):
+            #old solution: https://stackoverflow.com/questions/10818661/scapy-retrieving-rssi-from-wifi-packets
+            #has been fixed now you don't have to use decoded part of packet but can use dBm_AntSignal
+            self.signal_strength = frame[scapy.RadioTap].dBm_AntSignal
+
 
 
 #to prevent race conditions

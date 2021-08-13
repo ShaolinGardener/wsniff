@@ -16,6 +16,8 @@ import website.interfaces as interfaces
 import website.oui as oui
 from website.settings import WPA_SUPPLICANT_BACKUP_PATH
 
+import display.display as display
+
 from sqlalchemy import desc
 import secrets
 import random
@@ -107,12 +109,26 @@ def settings():
 
 @app.route("/settings/reboot")
 def reboot():
+    #clear temp dir
+    temp_dirpath = os.path.join(app.root_path, "static", "tmp", "*")
+    subprocess.run("rm " + temp_dirpath, shell=True, check=False) #check=False because it can be empty and then this command will fail
+
+    #shutdown display
+    display.shutdown()
+
     str_shutdown = "reboot"
     subprocess.run(str_shutdown, shell=True, check=True)
     return render_template("settings.html", title="Settings", interfaces=ifaces) #should not be executed
 
 @app.route("/settings/shutdown")
 def shutdown():
+    #clear temp dir
+    temp_dirpath = os.path.join(app.root_path, "static", "tmp", "*")
+    subprocess.run("rm " + temp_dirpath, shell=True, check=False) #check=False because it can be empty and then this command will fail
+    
+    #shutdown display
+    display.shutdown()
+
     str_shutdown = "shutdown -h now"
     subprocess.run(str_shutdown, shell=True, check=True)
     return render_template("settings.html", title="Settings", interfaces=ifaces) #should not be executed
@@ -228,9 +244,21 @@ def capture_download(id):
     c = Capture.query.get(id)
     if c:
         dir_path = os.path.join(app.root_path, "static", "captures", str(c.id))
-        out = os.path.join(dir_path, c.title)
-        #shutil.make_archive(out, 'zip', dir_path)
-        return send_from_directory(dir_path, "cap.pcap", as_attachment=True, attachment_filename=c.title+".pcap")
+        
+        out_dirpath = os.path.join(app.root_path, "static", "tmp")
+        out_filepath = os.path.join(out_dirpath, str(c.id))
+        try:
+            #first clear tmp directory (you cant delete zip-file after send_from_directory, so this ensures the zip-files don't accumulate)
+            subprocess.run("rm " + os.path.join(out_dirpath, "*"), shell=True, check=False) #check=False because if tmp-dir is empty this will fail
+            
+            #base_name: name of file to create including path but without file ending (.zip)
+            #root_dir is a directory that will be the root directory of the archive, all paths in the archive will be relative to it
+            #base_dir is the directory where we start archiving from; base_dir must be given relative to root_dir
+            shutil.make_archive(base_name=out_filepath, format="zip", root_dir=dir_path, base_dir=".")
+            download_filename = (c.title+".zip").replace(" ", "_")
+            return send_from_directory(out_dirpath, str(c.id) + ".zip", as_attachment=True, attachment_filename=download_filename)
+        except Exception as e:
+            flash(f"Error when zipping: {e}", "danger")
     else:
         flash(f"Folder for capture with id {id} not found", "danger")
     return redirect(url_for("home"))
@@ -354,43 +382,6 @@ def capture_delete(id: int):
         flash(f"Capture does not exist.", "danger")
     return redirect(url_for("home")) 
 
-# #WARDRIVING
-# @app.route("/wardriving")
-# @login_required
-# def wardriving():
-# #is an interface with monitor mode available?
-#     if not interfaces.monitor_interface_available():
-#         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
-#         return redirect(url_for("settings"))
-    
-#     if not gps.is_gps_available():
-#         if not gps.gps_is_running():
-#             flash("You have to enable GPS before you can do that.", "danger")
-#             return redirect(url_for("settings"))
-#         else:
-#             flash("Altough your GPS is enabled, you have no connection. Wait 'till gps is available.", "danger")
-#             return redirect(url_for("gps_show"))
-
-#     running = wardriving.is_running()
-#     return render_template("wardriving.html", title="Wardriving", running=running)
-
-# @app.route("/wardriving/start")
-# @login_required
-# def wardriving_start():
-#     try:
-#         wardrivingstart_scan(interfaces.monitor_iface.get_name())
-#         flash("Starting wardriving", "success")
-#     except ValueError as e:
-#         flash(str(e), "danger")
-#     return redirect(url_for("wardriving")) 
-
-# @app.route("/wardriving/stop")
-# @login_required
-# def wardriving_stop():
-#     stop_scan()
-#     flash("Stopped wardriving.", "success")
-#     return redirect(url_for("wardriving")) 
-
 
 #WARDRIVE capture
 #read data from file
@@ -470,6 +461,11 @@ def get_stations(bssid, ssid):
     size = len(stations)
     return render_template("ap.html", title="Access Point", ssid=ssid, stations=stations, vendors=vendors, size=size)
 
+@app.route("/test")
+@login_required
+def test():
+    display.wardrive()
+    return redirect(url_for("home"))
 
 @app.route("/settings/wifi-external", methods=["GET", "POST"])
 @login_required
