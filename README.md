@@ -12,11 +12,11 @@ A WiFi sniffer you can use with your Raspberry Pi and simply control over your s
  graphical user interface. 🌱
  
 ## Table of Contents
-- [Requirements](#requirements)
+- [Requirements](#-requirements)
 - [Setup](#setup)
 - [Run the software](#start-wsniff)
-- [Adapt wsniff](#adapt-wsniff)
-- [Licence](#licence)
+- [Adapt wsniff](#-adapt-wsniff)
+- [Licence](#-licence)
  
 ## 📝 Requirements
 You will need:
@@ -24,27 +24,39 @@ You will need:
 - a GPS module connected to the Pi in case you want to use the wardriving functions
 - a USB WiFi adapter that supports monitor mode (otherwise sniffing would not make sense anyway)
 
-## ⚙️ Setup
-- Clone the project from Github
+## Setup 
+1. Clone the project from Github
 ```sh
 cd <path_to_install_to>
 git clone https://github.com/JulianWindeck/wsniff wsniff
 ```
-- Create a virtual environment for python 
+2. Install the software 
 ```
 cd wsniff
-python3 -m venv venv //could also be python, depends on your alias
-source ./venv/bin/activate
-pip install -r ./res/requirements.txt
-deactivate
+sudo ./setup.sh
 ```
 
-In theory, you are now ready to go, but in order to be able to control your sniffer with your smartphone
+3. Enable SPI and UART interface
+```sh
+sudo raspi-config
+```
+Then, just choose the options as shown in the images below. 
+![activate_spi](https://user-images.githubusercontent.com/25824942/129612775-b5b028af-971c-4582-8dfe-ea2d966cfa8f.png)
+After you have enabled SPI, you can directly proceed with activating the UART interface
+as shown in this second image.
+![activate_uart](https://user-images.githubusercontent.com/25824942/129612752-6621f4b4-c08c-4c4f-9920-fa1fae5b8768.png)
+After that, you have to reboot:
+```sh
+sudo reboot 
+```
+
+In theory, you are now ready to go and [can start the software](#start-wsniff).
+However, if you want to be able to control your sniffer with your smartphone
 or another mobile device, you should set up the internal WiFi card of the Pi as an Access Point. 
 For thast, just follow the [official manual](https://www.raspberrypi.org/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point).
 After a reboot, you should be able to connect to the new wireless network of the Raspberry.
 
-## ▶️ Start wsniff
+## Start wsniff
 Be sure you are in the wsniff directory which you cloned from Github.
 
 Then, you can start wsniff with `sudo ./venv/bin/python main.py`.
