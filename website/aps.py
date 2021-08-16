@@ -3,7 +3,7 @@ from time import sleep
 import time
 import random, os
 import website.oui as oui
-from website.frame import Frame 
+#from website.frame import Frame
 
 from scapy.all import *
 
@@ -17,13 +17,13 @@ class AccessPoint():
         self.signal_strength = 0
 
         self.t_last_seen = time.time()
-    
+
     def isAlive(self, t_death=20):
         return time.time() - self.t_last_seen < t_death
 
     def refresh(self, signal_strength=0):
         self.t_last_seen = time.time()
-        
+
         if signal_strength != 0:
             self.signal_strength = signal_strength
 
@@ -42,7 +42,7 @@ class Station:
 
 class Frame:
     """
-    Format that is more intuitive to use (also reduces coupling because we are now more independant from other libraries, so 
+    Format that is more intuitive to use (also reduces coupling because we are now more independant from other libraries, so
     it is easer to switch them)
     """
 
@@ -54,8 +54,8 @@ class Frame:
 
     def __init__(self, frame, channel=0, iface=None):
         self.frame = frame
-        
-        self.bssid = Nonde
+
+        self.bssid = None
         self.ssid = None
         self.signal_strength = 0
         self.channel = channel
@@ -102,11 +102,11 @@ class Frame:
 
 
 #to prevent race conditions
-lock = Lock() 
+lock = Lock()
 
 #bssid as unique identifier, AccessPoint object as value
 # bssid: str -> ap: AcessPoint
-aps = dict() #all APs that are uncovered 
+aps = dict() #all APs that are uncovered
 
 # bssid: str -> # station-MACs: lsit ; e.g. {"bc:30:d9:33:30:ca" : ["e8:df:70:f8:32:80", "e4:df:70:f8:32:80"]}
 ap_station_mapper = dict() #assign stations to access points
@@ -123,18 +123,18 @@ def print_access_points():
 
 def clean(t_remove, t_sleep=10):
     """
-    t_remove: if no beacon frame of a specific access point is received within this time frame, it is removed from the list 
+    t_remove: if no beacon frame of a specific access point is received within this time frame, it is removed from the list
     t_sleep: timespan between cleaning traversals
     """
     while _running.is_set():
         sleep(t_sleep)
-        
+
         #remove all dead access points
         bssids = tuple(aps.keys())
         for bssid in bssids:
             if not aps[bssid].isAlive(t_remove):
                 del aps[bssid]
-        
+
 
 
 def hopper(iface):
@@ -144,17 +144,17 @@ def hopper(iface):
         sleep(0.25)
         os.system(f"sudo iwconfig {iface} channel {channel}")
         #print(f"[*] current channel {channel}")
-        
+
         dig = int(random.random() * 13) + 1
         if dig != channel:
             channel = dig
 
 
 def handlePacket(pkt):
-    
+
     if pkt.haslayer(Dot11Beacon):
         #bssid of AP is stored in second address field of header
-        bssid = pkt.getlayer(Dot11).addr2 
+        bssid = pkt.getlayer(Dot11).addr2
 
         #found new access point: add it to dict
         if bssid not in aps:
@@ -162,18 +162,18 @@ def handlePacket(pkt):
             channel = pkt.getlayer(Dot11Elt).channel
             ap = AccessPoint(bssid, ssid, channel)
 
-            if pkt.haslayer(RadioTap):   
+            if pkt.haslayer(RadioTap):
                 ap.signal_strength = pkt[RadioTap].dBm_AntSignal
 
             aps[bssid] = ap
         else: #acess point already in dict -> refresh AP to prevent it from getting deleted
             #acess point already in dict -> refresh AP to prevent it from getting deleted
-            if not pkt.haslayer(RadioTap): 
+            if not pkt.haslayer(RadioTap):
                 aps[bssid].refresh()
             else:
                 signal_strength = pkt[RadioTap].dBm_AntSignal
                 aps[bssid].refresh(signal_strength)
-            
+
         # #hidden networks
         # if ssid == '' or pkt.getlayer(Dot11Elt).ID != 0:
         #    print("[+] Hidden Network Detected")
@@ -206,7 +206,7 @@ def handlePacket(pkt):
                 ap_station_mapper[ap] = set()
             ap_station_mapper[ap].add(station)
 
-        
+
 
 def scan(iface):
     while _running.is_set():
@@ -240,7 +240,7 @@ def start_scan(interface:str, t_remove:int=23, t_clean=7):
     thread.daemon = True
     thread.start()
 
-    #remove old AccessPoints 
+    #remove old AccessPoints
     thread = Thread(target=clean, args=(t_remove, t_clean), name="cleaner")
     thread.daemon = True
     thread.start()
@@ -267,7 +267,7 @@ def get_stations_for(bssid):
     if stations:
         return list(stations)
     return []
-    
+
 
 if __name__ == "__main__":
     start_scan(interface="wlan1mon", t_remove=0.5, t_clean=2)
