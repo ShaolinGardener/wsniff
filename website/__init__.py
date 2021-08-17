@@ -20,6 +20,9 @@ login_manager.login_view = "login"
 login_manager.login_message = "You have to log in before using wsniff."
 login_manager.login_message_category = "danger"
 
+from website.models import Capture, User
+
+
 #because of gunicorn you have to call this in __init__.py
 def setup():
     load_local_oui(directory_path="./website/static/res")
@@ -29,6 +32,12 @@ def setup():
     if not os.path.exists(temp_dirpath):
         os.makedirs(temp_dirpath)
         print("[+] Created temp directory")
+
+    #is this the first time the program is started -> setup DB
+    if not os.path.exists(os.path.join(app.root_path, "db.sqlite")):
+        print("[+] Create empty database")
+        db.drop_all()
+        db.create_all()
 
     #start display
     display.startup()

@@ -30,7 +30,7 @@ In order to fix this, use raspi-config to set the country before use:
 ```sh
 sudo raspi-config
 ```
-In this dialog, first choose 'Localization Options' and then 'WLAN Country'. Here you should select your country and then confirm your choice by pressing <Enter>. After that, you can exit the settings menu by pressing <Escape>.
+In this dialog, first choose 'Localization Options' and then 'WLAN Country'. Here you should select your country and then confirm your choice by pressing \<Enter\>. After that, you can exit the settings menu by pressing \<Escape\>.
 
 1. Clone the project from Github
 ```sh
@@ -51,15 +51,20 @@ sudo reboot
 In theory, you are now ready to go and [can start the software](#start-wsniff).
 However, if you want to be able to control your sniffer with your smartphone
 or another mobile device, you should set up the internal WiFi card of the Pi as an Access Point. 
-For thast, just follow the [official manual](https://www.raspberrypi.org/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point).
+For that, just follow the [official manual](https://www.raspberrypi.org/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point).
 After a reboot, you should be able to connect to the new wireless network of the Raspberry.
 
 ## Start wsniff
 Be sure you are in the wsniff directory which you cloned from Github.
 
-Then, you can start wsniff with `sudo ./venv/bin/python main.py`.
+Then, you can start wsniff with:
+```sh
+sudo ./venv/bin/python main.py
+```
 After you have executed that command, you can use the browser of the device you have connected to the Pi in the previous step and type in the Pi's IP-address.
-Now the web interface of wsniff should appear.
+Now the web interface of wsniff should appear where you should create a new account first.
+![image](https://user-images.githubusercontent.com/25824942/129654364-5bd494c1-0d1a-49d3-96d1-8eb76f97cc8d.png)
+
 
 ## 🖋 Adapt wsniff
 - After the installation of new packages you should update requirements.txt:

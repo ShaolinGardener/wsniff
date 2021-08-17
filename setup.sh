@@ -25,15 +25,11 @@ sudo make check
 sudo make install
 #delete files
 cd .. #back to wsniff directory
-rm -Rf bcm2835-1.60*
+sudo rm -Rf bcm2835-1.60*
 
 #numpy needs OpenBLAS for linear algebra, if you install numpy via PyPI it
 #is expected you install a corresponding package yourself
 sudo apt-get install libatlas-base-dev
 #===============================================================================================
 
-#=====================================CREATE A EMPTY DATABASE===================================
-#Create a new empty database
-sudo ./venv/bin/python init_db.py
-#===============================================================================================
 
