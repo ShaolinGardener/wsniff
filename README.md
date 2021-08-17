@@ -25,27 +25,25 @@ You will need:
 - a USB WiFi adapter that supports monitor mode (otherwise sniffing would not make sense anyway)
 
 ## Setup 
+0. This step is only necessary if you use a fresh install of Raspberry Pi OS. Then, your Wi-Fi might be blocked by rfkill.
+In order to fix this, use raspi-config to set the country before use:
+```sh
+sudo raspi-config
+```
+In this dialog, first choose 'Localization Options' and then 'WLAN Country'. Here you should select your country and then confirm your choice by pressing <Enter>. After that, you can exit the settings menu by pressing <Escape>.
+
 1. Clone the project from Github
 ```sh
 cd <path_to_install_to>
-git clone https://github.com/JulianWindeck/wsniff wsniff
+git clone https://github.com/JulianWindeck/wsniff 
 ```
 2. Install the software 
 ```
 cd wsniff
-sudo ./setup.sh
+./setup.sh
 ```
 
-3. Enable SPI and UART interface
-```sh
-sudo raspi-config
-```
-Then, just choose the options as shown in the images below. 
-![activate_spi](https://user-images.githubusercontent.com/25824942/129612775-b5b028af-971c-4582-8dfe-ea2d966cfa8f.png)
-After you have enabled SPI, you can directly proceed with activating the UART interface
-as shown in this second image.
-![activate_uart](https://user-images.githubusercontent.com/25824942/129612752-6621f4b4-c08c-4c4f-9920-fa1fae5b8768.png)
-After that, you have to reboot:
+3. Now, you have to reboot:
 ```sh
 sudo reboot 
 ```
