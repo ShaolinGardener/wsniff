@@ -85,19 +85,19 @@ class Frame:
             self.bssid = frame.addr3
             self.macs = {frame.addr1, frame.addr2}
 
-        if (frame.haslayer(scapy.Dot11Elt) and
-                (frame.haslayer(scapy.Dot11Beacon) or frame.haslayer(scapy.Dot11ProbeResp))):
+        if (frame.haslayer(Dot11Elt) and
+                (frame.haslayer(Dot11Beacon) or frame.haslayer(Dot11ProbeResp))):
 
             try:
-                self.ssid = frame[scapy.Dot11Elt].info.decode().replace("\x00", "[none]")
+                self.ssid = frame[Dot11Elt].info.decode().replace("\x00", "[none]")
             except UnicodeDecodeError:
                 # Only seems to happen on macOS - probably some pcap decoding bug
                 self.ssid = None
 
-        if frame.haslayer(scapy.RadioTap):
+        if frame.haslayer(RadioTap):
             #old solution: https://stackoverflow.com/questions/10818661/scapy-retrieving-rssi-from-wifi-packets
             #has been fixed now you don't have to use decoded part of packet but can use dBm_AntSignal
-            self.signal_strength = frame[scapy.RadioTap].dBm_AntSignal
+            self.signal_strength = frame[RadioTap].dBm_AntSignal
 
 
 
