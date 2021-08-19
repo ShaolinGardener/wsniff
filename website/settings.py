@@ -1,12 +1,28 @@
+""" INTERFACE THAT IS SET TO MONITOR MODE AND SHOULD BE USED FOR SNIFFING
+    (note: don't use the internal card ['wlan0'/'wlan0mon'] since it used
+    as an access point)"""
 INTERFACE = "wlan1mon" #wlan1mon en0
-GPS_SERIAL = "/dev/serial0" #/dev/serial0
 
+""" CONFIGURE ACCESS TO YOUR GPS MODULE HERE"""
+GPS_SERIAL = "/dev/ttyUSB0" #NEO 8M: /dev/serial0, SkyTraq Venus 8: /dev/ttyUSB0
+#the baud rate is the symbol rate, i.e. the number of transferred symbols per second
+#you will find it in the information sheet of your gps module, the unit will be 'Bd'
+GPS_BAUD_RATE = 4800 #e.g. NEO 8M: 9600, SkyTraq Venus 8: 4800
+
+"""Set to 'True' if you have connected a 2.13 inch e-Paper HAT of waveshare
+   Set to 'False' otherwise"""
 DISPLAY_ENABLED = False
 
+""" Can be helpful when you setup the software or want to develop yourself
+    otherwise, just change it to 'False' since wsniff will run faster."""
+FLASK_DEBUG = True #TODO: change for production
+
+"""
+Most of the time you won't have to touch the stuff below
+"""
 WPA_SUPPLICANT_BACKUP_PATH = "/etc/wpa_supplicant/wpa_supplicant.conf.wsniff.backup"
 
 FLASK_THREADED = True
-FLASK_DEBUG = True #TODO: change for production
 
 SQLALCHEMY_DATABASE_URI = "sqlite:///db.sqlite"
 SQLALCHEMY_TRACK_MODS = False

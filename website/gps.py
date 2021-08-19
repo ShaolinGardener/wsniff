@@ -3,12 +3,12 @@ import serial
 from datetime import datetime
 
 from time import sleep, mktime, time
-from website.settings import GPS_SERIAL
+from website.settings import GPS_SERIAL, GPS_BAUD_RATE
 
 from threading import Thread, Event, Lock
 
-#Serial baud rate of neo 8M: 9600Bd (baud rate ist die symbolrate, also anzahl uebertragene zeichen pro sekunde)
-ser = serial.Serial(GPS_SERIAL, 9600, timeout=5.0) #'/dev/serial0'
+#you can change these values in settings.py
+ser = serial.Serial(GPS_SERIAL, GPS_BAUD_RATE, timeout=5.0)
 
 #nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
 #latin 1 because it seems to have problems with utf-8
@@ -32,7 +32,7 @@ class GPSRoute():
     def _add_waypoint(self, latitude: float, longitude: float):
         new = (time(), latitude, longitude)
         self.waypoints.append(new)
-    
+
     def _capture(self):
         while True:
             if self._stop.is_set():
@@ -41,7 +41,7 @@ class GPSRoute():
                 lat, lon = get_gps_data()
                 _add_waypoint(lat, lon)
             sleep(self.t_sample_delay)
-    
+
     def start_capture(self):
         self.t = Thread(target=self._capture, name="gps route tracker")
         self.t.setDaemon(True)
@@ -62,11 +62,11 @@ class GPSRoute():
         for waypoint in self.waypoints:
             f.write(f"{waypoint[0]};{waypoint[1]};{waypoint[2]}\n")
         f.close()
-    
+
     def load_from_file(self):
         f = open(self.filepath, "r")
         self.waypoints = []
-        
+
         line = f.readline()
         while line:
             t = line.strip().split(";")
@@ -74,7 +74,7 @@ class GPSRoute():
             self.waypoints.append(waypoint)
             line = f.readline()
         f.close()
-    
+
     def get_gpx(self):
         header = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
                     <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="wsniff"
@@ -117,7 +117,7 @@ _gps_available = False
 
 def gps_is_running():
     return not _stop_event.is_set()
-    
+
 def is_gps_available():
     global _gps_available
     return _gps_available
@@ -143,7 +143,7 @@ def check_gga_checksum(line: str, given_checksum: str):
     computed_checksum = bytes[0]
     for i in range(1, len(bytes)):
         computed_checksum = computed_checksum ^ bytes[i]
-    
+
     #check if checksums match
     if int(given_checksum, 16) == computed_checksum:
         return True
@@ -169,15 +169,15 @@ def _read_data():
         sleep(0.1) #TODO: this has to be small enough to parse input in real time, or else a time delay will slowly unfold
         try:
             line = sio.readline()
-            #print(line)
-            
+            print(line)
+
             if line.startswith("$GNGGA"):
                 #parse GNGGA message according to protocol (http://navspark.mybigcommerce.com/content/NMEA_Format_v0.1.pdf)
                 data = line.split(",")
                 #time: UTC of position in hhmmss.sss format, lat and lon: str, num_sats: number of available satellites, checksum: 2 hex characters
                 time, lat, lon, num_sats, checksum = data[1], data[2], data[4], int(data[7]), data[12][1:]
-                
-                if num_sats > 0: 
+
+                if num_sats > 0:
                     _gps_available = True
 
                     lat, lon = convert(lat), convert(lon)
@@ -204,7 +204,7 @@ def start_gps_tracking():
     if gps_is_running():
         print("[*] Tried starting gps thread although there is already one running.")
     _stop_event.clear()
-    
+
     print("[*] Starting GPS Thread")
     gps_thread = Thread(target=_read_data, name="gps tracker")
     gps_thread.daemon = True
