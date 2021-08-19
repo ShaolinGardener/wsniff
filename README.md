@@ -25,7 +25,10 @@ You will need:
 - a USB WiFi adapter that supports monitor mode (otherwise sniffing would not make sense anyway)
 
 ## Setup 
-0. This step is only necessary if you use a fresh install of Raspberry Pi OS. Then, your Wi-Fi might be blocked by rfkill.
+Before you begin with this setup process, make sure you have an active Internet connection.
+It's also recommendable to execute `sudo apt-get update` and `sudo apt-get upgrade` before you start.
+
+0. It might be the case your Wi-Fi is blocked by rfkill because you haven't set your Wi-Fi country yet.
 In order to fix this, use raspi-config to set the country before use:
 ```sh
 sudo raspi-config
@@ -48,21 +51,29 @@ cd wsniff
 sudo reboot 
 ```
 
-In theory, you are now ready to go and [can start the software](#start-wsniff).
+4. In theory, you are now ready to go and [can start the software](#start-wsniff).
 However, if you want to be able to control your sniffer with your smartphone
 or another mobile device, you should set up the internal WiFi card of the Pi as an Access Point. 
-For that, just follow the [official manual](https://www.raspberrypi.org/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point).
-After a reboot, you should be able to connect to the new wireless network of the Raspberry.
+In order to do that, be sure you are in the wsniff directory and execute the following script (which automates the steps from [this official manual](https://www.raspberrypi.org/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point)):
+```sh
+sudo python3 setupAccessPoint.py
+```
+After a reboot (`sudo systemctl reboot`), you should be able to connect to the new wireless network of the Raspberry. 
+- SSID: wsniff
+- default password: feedmepackets
+
+Recommendation: Connect with your smartphone since it can be quite fun to control your sniffer with it.
 
 ## Start wsniff
 Be sure you are in the wsniff directory which you cloned from Github.
 
-Then, you can start wsniff with:
+Then, you can start wsniff with (it can be you have to prepend 'sudo'):
 ```sh
-sudo ./venv/bin/python main.py
+python3 startup.py
 ```
 After you have executed that command, you can use the browser of the device you have connected to the Pi in the previous step and type in the Pi's IP-address.
 Now the web interface of wsniff should appear where you should create a new account first.
+If you have used the setupAccessPoint.py script from above to set up the Raspberry as a wireless access point, you can also browse to 'wsniff.com' after connecting to the 'wsniff' WiFi network.
 ![image](https://user-images.githubusercontent.com/25824942/129654364-5bd494c1-0d1a-49d3-96d1-8eb76f97cc8d.png)
 
 
