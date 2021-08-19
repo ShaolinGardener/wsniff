@@ -32,4 +32,8 @@ sudo rm -Rf bcm2835-1.60*
 sudo apt-get install libatlas-base-dev
 #===============================================================================================
 
-
+NC='\033[0m' #no color/back to default
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+printf "${GREEN}[*] ${RED} If there were no error messages, you should now reboot\n"
+printf "${GREEN}[*] ${RED} this device in order for all changes to take effect (sudo reboot).\n"
