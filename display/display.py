@@ -3,7 +3,12 @@ import sys
 import os
 
 import logging
-from display.waveshare import epd2in13_V2
+
+#to enable debugging/running the software on macOS or Windoof
+if sys.platform.startswith('linux'):
+    from display.waveshare import epd2in13_V2
+else:
+    from display.waveshare import fake_edp as edp2in13_
 import time
 from PIL import Image, ImageDraw, ImageFont
 from threading import Thread

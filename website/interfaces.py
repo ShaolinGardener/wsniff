@@ -1,25 +1,36 @@
-from website.settings import INTERFACE
-
+import sys
 from enum import Enum
 import subprocess
+
+from website.settings import INTERFACE
+
+
 
 def get_interfaces():
     """
     Returns: a list of all interfaces
     """
-    f = open("/proc/net/dev", "r") #here infos about available network interfaces are stored (along their name)
-    #discard first two and last line + we only need the first column of the file
-    return list(map(lambda line: line.split(":")[0].strip(), f.read().split("\n")[2:]))[:-1]
+    if sys.platform.startswith('linux'):
+        #here infos about available network interfaces are stored (along their name)
+        f = open("/proc/net/dev", "r") 
+        #discard first two and last line + we only need the first column of the file
+        return list(map(lambda line: line.split(":")[0].strip(), f.read().split("\n")[2:]))[:-1]
+    else:
+        #other OS are not supported yet
+        return []
 
 def get_wireless_interfaces():
     """
+    Only get wireless interfaces
     """
     ifaces = get_interfaces()
     return list(filter(lambda iface: "wlan" in iface, ifaces))
 
 def monitor_interface_available():
-    iw = get_wireless_interfaces() #wireless interfaces
-    mon_iw = list(filter(lambda iface: "mon" in iface, iw)) #get wireless interfaces in monitor mode
+    #wireless interfaces
+    iw = get_wireless_interfaces() 
+    #get wireless interfaces in monitor mode
+    mon_iw = list(filter(lambda iface: "mon" in iface, iw))
     return len(mon_iw) > 0
 
 class Mode(Enum):
@@ -32,7 +43,8 @@ class Interface:
         self.mode = mode
 
         if mode == Mode.MONITOR:
-            self.name = name[:-3] #assuming it follows this pattern of ending monitoring interfaces with 'mon'
+            #assuming it follows this pattern of ending monitoring interfaces with 'mon'
+            self.name = name[:-3] 
             self.mon_name = name
         else:
             self.name = name

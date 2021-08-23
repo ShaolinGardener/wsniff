@@ -1,3 +1,4 @@
+import sys
 import io, json, re
 import serial
 from datetime import datetime
@@ -7,12 +8,17 @@ from website.settings import GPS_SERIAL, GPS_BAUD_RATE
 
 from threading import Thread, Event, Lock
 
-#you can change these values in settings.py
-ser = serial.Serial(GPS_SERIAL, GPS_BAUD_RATE, timeout=5.0)
+#enable basic testing on other OS than linux
+if sys.platform.startswith('linux'):
+    #you can change these values in settings.py
+    ser = serial.Serial(GPS_SERIAL, GPS_BAUD_RATE, timeout=5.0)
 
-#nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
-#latin 1 because it seems to have problems with utf-8
-sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser), encoding="latin1")
+    #nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
+    #latin 1 because it seems to have problems with utf-8
+    sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser), encoding="latin1")
+else:
+    #you will only be able to test GPS on linux
+    sio = None
 
 print("[+] Initializing gps module")
 
