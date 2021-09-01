@@ -3,7 +3,8 @@ from time import sleep
 import time
 import random, os
 import website.oui as oui
-#from website.frame import Frame
+from website.interfaces import Interface, Mode, get_interfaces
+from website.capture.hopper import Hopper, HoppingStrategy, EvenlyDistributedHopping
 
 from scapy.all import *
 
@@ -104,6 +105,9 @@ class Frame:
 #to prevent race conditions
 lock = Lock()
 
+#hopper to hop channels
+hopper = None
+
 #bssid as unique identifier, AccessPoint object as value
 # bssid: str -> ap: AcessPoint
 aps = dict() #all APs that are uncovered
@@ -136,20 +140,6 @@ def clean(t_remove, t_sleep=10):
                 del aps[bssid]
 
 
-
-def hopper(iface):
-    channel = 1
-    stop_hopper = False
-    while _running.is_set():
-        sleep(0.25)
-        os.system(f"sudo iwconfig {iface} channel {channel}")
-        #print(f"[*] current channel {channel}")
-
-        dig = int(random.random() * 13) + 1
-        if dig != channel:
-            channel = dig
-
-
 def handlePacket(pkt):
 
     if pkt.haslayer(Dot11Beacon):
@@ -166,6 +156,9 @@ def handlePacket(pkt):
                 ap.signal_strength = pkt[RadioTap].dBm_AntSignal
 
             aps[bssid] = ap
+
+            #update channel stats of hopper
+            hopper.increment_ap_observations(channel)
         else: #acess point already in dict -> refresh AP to prevent it from getting deleted
             #acess point already in dict -> refresh AP to prevent it from getting deleted
             if not pkt.haslayer(RadioTap):
@@ -225,15 +218,20 @@ def start_scan(interface:str, t_remove:int=23, t_clean=7):
     t_remove: if the access point has not been seen for this time, it is removed from the list of active access points
     t_clean: time span between two iterations of the cleaning thread
     """
+    global hopper
     #already running
     if _running.is_set():
         raise ValueError(f"Already started AP scan.")
     _running.set()
 
+    hopping_strategy = EvenlyDistributedHopping(delay=0.25)
+    available_interfaces = get_interfaces(Mode.MONITOR)
+    hopper = Hopper(hopping_strategy, available_interfaces, list(range(1, 14)))
+    hopper.start()
     #hop through channels
-    thread = Thread(target=hopper, args=(interface, ), name="hopper")
-    thread.daemon = True
-    thread.start()
+    # thread = Thread(target=hopper, args=(interface, ), name="hopper")
+    # thread.daemon = True
+    # thread.start()
 
     #scan packets to find beacon frames
     thread = Thread(target=scan, args=(interface,), name="scanner")
@@ -248,7 +246,7 @@ def start_scan(interface:str, t_remove:int=23, t_clean=7):
 def stop_scan():
     _running.clear()
     aps.clear() #clear results from previous scan (this is also done in the scan function and necessary there, but for logical reasons also included here)
-
+    hopper.stop_hopping()
 
 def get_aps():
     """

@@ -39,7 +39,7 @@ class _ChannelStatistics():
         """
         self.stats[channel] = self.stats.get(channel, 0) + 1
 
-    def reset_count(self, channel:int):
+    def reset(self):
         """
         Should be called after a hop was executed
         """
@@ -168,7 +168,7 @@ class FOCC(HoppingStrategy):
 
         super().__init__()
 
-        self.generations
+        self.generations = generations
         self.t_learn = t_learn
         self.t_exp = t_exp
         self.state = FOCC.State.LEARN
@@ -237,6 +237,9 @@ class Hopper(Thread):
         channels: a list of channels between which the interfaces should hop
         """
         Thread.__init__(self)
+        self.name = 'hopper'
+        self.daemon = True
+
         self.interfaces = interfaces
         self.channels = channels
 
@@ -246,7 +249,7 @@ class Hopper(Thread):
         self.stop = Event()
 
         #init channel stats
-        self.channel_stats = _ChannelStatistics()
+        self.channel_stats = _ChannelStatistics(channels)
 
     def increment_ap_observations(self, channel: int):
         """
@@ -265,6 +268,7 @@ class Hopper(Thread):
             #execute one hopping round
             channels = self.hop_strategy.get_hop(self.channel_stats)
             for i in range(len(channels)):
+                print(f"Switch to channel {channels[i]}")
                 self.interfaces[i].set_channel(channels[i])
 
             delay = self.hop_strategy.get_delay(self.channel_stats)
@@ -273,8 +277,9 @@ class Hopper(Thread):
 
             #delay till next hop
             time.sleep(delay)
+        
 
-    def stop(self):
+    def stop_hopping(self):
         """
         Stop the channel hopping. After this, this object has done its job. 
         If you need to hop channels again, create a new Hopper-object.

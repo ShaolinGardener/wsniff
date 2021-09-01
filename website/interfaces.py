@@ -105,6 +105,13 @@ def monitor_interface_available():
 
 #a dict of all interfaces available
 interfaces = {}
+#initialize it in case there are already some interfaces in monitor mode when starting wsniff
+names = _get_wireless_interface_names()
+for name in names:
+    if "mon" in name:
+        interfaces[name[:-3]] = Interface(name, Mode.MONITOR)
+    else:
+        interfaces[name] = Interface(name, Mode.MANAGED)
 
 def update_interfaces():
     """
