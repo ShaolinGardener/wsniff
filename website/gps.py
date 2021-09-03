@@ -3,6 +3,8 @@ import io, json, re
 import serial
 from datetime import datetime
 
+import pynmea2
+
 from time import sleep, mktime, time
 from website.settings import GPS_SERIAL, GPS_BAUD_RATE
 
@@ -172,22 +174,28 @@ def _read_data():
     global _gps_available
 
     while not _stop_event.is_set():
-        sleep(0.1) #TODO: this has to be small enough to parse input in real time, or else a time delay will slowly unfold
+        sleep(0.05) #TODO: this has to be small enough to parse input in real time, or else a time delay will slowly unfold
         try:
             line = sio.readline()
-            print(line)
 
-            if line.startswith("$GNGGA"):
-                #parse GNGGA message according to protocol (http://navspark.mybigcommerce.com/content/NMEA_Format_v0.1.pdf)
-                data = line.split(",")
-                #time: UTC of position in hhmmss.sss format, lat and lon: str, num_sats: number of available satellites, checksum: 2 hex characters
-                time, lat, lon, num_sats, checksum = data[1], data[2], data[4], int(data[7]), data[12][1:]
+            try:
+                msg = pynmea2.parse(line)
+            except serial.SerialException as e:
+                print('Device error: {}'.format(e))
+                continue
+            except pynmea2.ParseError as e:
+                print('Parse error: {}'.format(e))
+                continue
 
-                if num_sats > 0:
+            #only parse nmea messages that comprise GPS information
+            if msg and hasattr(msg, 'lat') and hasattr(msg, 'lon'):
+                lat = float(msg.lat)
+                lon = float(msg.lon)
+
+                if lat != 0.0 or lon != 0.0:
                     _gps_available = True
 
-                    lat, lon = convert(lat), convert(lon)
-                    print(f"time:{time} sats:{num_sats} lat:{lat} lon:{lon}")
+                    print(f"lat:{lat} lon:{lon}")
                     _lock.acquire()
                     _current_position = lat, lon
                     _lock.release()

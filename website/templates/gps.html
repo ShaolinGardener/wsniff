@@ -27,8 +27,9 @@
 <div id="mapid" style="height: 500px;"></div>
 
 <script type="text/javascript">
-    let lat = {{ lat }}
-    let lon = {{ lon }}
+    //use parseFloat to get rid of leading zeros which result in a syntax error
+    let lat = parseFloat("{{ lat }}");
+    let lon = parseFloat("{{ lon }}");
     //var mymap = L.map('mapid').setView([49.77915766666667, 11.1776305], 18);
     var mymap = L.map('mapid').setView([lat, lon], 18);
 
