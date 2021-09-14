@@ -77,7 +77,7 @@ def server_is_available(timeout: float = 10.0) -> bool:
 def set_auth_token(token: str):
     session.headers.update({'x-access-token': token})
 
-def autheticate(username: str, password: str):
+def authenticate(username: str, password: str):
     """
     Try to autheticate with username and password.
     If these login credentials are wrong, this returns False

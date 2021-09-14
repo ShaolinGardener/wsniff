@@ -12,8 +12,15 @@ from threading import Thread, Event, Lock
 
 #enable basic testing on other OS than linux
 if sys.platform.startswith('linux'):
-    #you can change these values in settings.py
-    ser = serial.Serial(GPS_SERIAL, GPS_BAUD_RATE, timeout=5.0)
+    try:
+        #you can change these values in settings.py
+        ser = serial.Serial(GPS_SERIAL, GPS_BAUD_RATE, timeout=5.0)
+    except serial.serialutil.SerialException:
+        #if the serial port that is specified (GPS_SERIAL) cannot be opened
+        print('[-] Please specify the real serial port of your GPS module ')
+        print('in the settings (GPS_SERIAL). If you do not want to use a GPS module,')
+        print('just set it to /dev/null')
+        sys.exit(1)
 
     #nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
     #latin 1 because it seems to have problems with utf-8
