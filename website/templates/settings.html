@@ -6,20 +6,27 @@
 
 <div>
   <h2>Interfaces</h2>
+  All interfaces that are set to monitor mode will be used for capturing.
   <div class="card">
     <ul class="list-group list-group-flush">
-      {% for iface in interfaces %}
+      {% for iface in managed %}
       <li class="list-group-item">
-        {{iface}} 
-        {% if "mon" not in iface %}
-          <a class="btn btn-primary btn-sm ml-4" href="{{ url_for('activate_monitor', interface=iface) }}">Activate Monitor Mode</a>
-        {% else %}
-          <a class="btn btn-danger btn-sm ml-1" href="{{ url_for('deactivate_monitor', interface=iface) }}">Deactivate</a>
-        {% endif %}
+        {{ iface.get_name() }}
+        <a class="btn btn-primary btn-sm ml-4" href="{{ url_for('activate_monitor', interface=iface.name) }}">Activate Monitor Mode</a>
+      </li>
+      {% endfor %}
+      {% for iface in monitor %}
+      <li class="list-group-item">
+        {{ iface.get_name() }}
+        <a class="btn btn-danger btn-sm ml-1" href="{{ url_for('deactivate_monitor', interface=iface.name) }}">Deactivate</a>
       </li>
       {% endfor %}
     </ul>
   </div>
+  <p class="mt-1"><small class="text-muted small">
+    One of these interfaces cannot be switched to monitor mode since it is the internal card which has no support for that. 
+    Moreover, it is needed to serve as an access point so you can connect your devices ;)
+  </small></p>
 </div><!-- end interfaces -->
 
 <!-- GPS -->

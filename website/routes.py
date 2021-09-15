@@ -5,14 +5,13 @@ from flask_login import login_required, login_user, logout_user, current_user
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm
 from website.models import User, Capture, CaptureState, CaptureType
-import website.interfaces
 
 import website.capture.capture as capture
 from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior
 import website.aps as aps
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
-import website.interfaces as interfaces
+from website.interfaces import Interface, get_interfaces, Mode, monitor_interface_available, get_all_interfaces
 import website.oui as oui
 from website.settings import WPA_SUPPLICANT_BACKUP_PATH
 
@@ -47,7 +46,7 @@ def home(path=""):
     #old_captures = Capture.query.filter(~Capture.id.in_(running_ids)).order_by(desc(Capture.date_created)).all()
     #db.session.commit()
 
-    interface_available = interfaces.monitor_interface_available()
+    interface_available = monitor_interface_available()
     return render_template("home.html", title="Home", interface_available=interface_available, running=running_captures, old_capture_all=old_captures_capture_all, old_wardriving=old_captures_wardriving)
 
 
@@ -103,9 +102,10 @@ def logout():
 @app.route("/settings")
 @login_required
 def settings():
-    ifaces = interfaces.get_wireless_interfaces()
+    managed = get_interfaces(Mode.MANAGED)
+    monitor = get_interfaces(Mode.MONITOR)
     gps_running = gps.gps_is_running()
-    return render_template("settings.html", title="Settings", interfaces=ifaces, gps_running=gps_running)
+    return render_template("settings.html", title="Settings", managed=managed, monitor=monitor, gps_running=gps_running)
 
 @app.route("/settings/reboot")
 def reboot():
@@ -118,7 +118,7 @@ def reboot():
 
     str_shutdown = "reboot"
     subprocess.run(str_shutdown, shell=True, check=True)
-    return render_template("settings.html", title="Settings", interfaces=ifaces) #should not be executed
+    return render_template("settings.html", title="Settings") #should not be executed
 
 @app.route("/settings/shutdown")
 def shutdown():
@@ -131,13 +131,13 @@ def shutdown():
 
     str_shutdown = "shutdown -h now"
     subprocess.run(str_shutdown, shell=True, check=True)
-    return render_template("settings.html", title="Settings", interfaces=ifaces) #should not be executed
+    return render_template("settings.html", title="Settings") #should not be executed
 
 @app.route("/settings/interfaces/<string:interface>/monitor/activate")
 @login_required
 def activate_monitor(interface:str):
-    iface = interfaces.Interface(interface)
     try:
+        iface = get_all_interfaces()[interface]
         iface.enable_monitor_mode()
     except:
        flash(f"Could not turn '{interface}' into monitor mode", "danger") 
@@ -149,8 +149,8 @@ def activate_monitor(interface:str):
 @app.route("/settings/interfaces/<string:interface>/monitor/deactivate")
 @login_required
 def deactivate_monitor(interface:str):
-    iface = interfaces.Interface(interface, mode=interfaces.Mode.MONITOR)
     try:
+        iface = get_all_interfaces()[interface]
         iface.disable_monitor_mode()
     except:
        flash(f"Could not disable '{interface}'", "danger") 
@@ -249,7 +249,7 @@ def capture_download(id):
         out_filepath = os.path.join(out_dirpath, str(c.id))
         try:
             #first clear tmp directory (you cant delete zip-file after send_from_directory, so this ensures the zip-files don't accumulate)
-            subprocess.run("rm " + os.path.join(out_dirpath, "*"), shell=True, check=False) #check=False because if tmp-dir is empty this will fail
+            subprocess.run("sudo rm " + os.path.join(out_dirpath, "*"), shell=True, check=False) #check=False because if tmp-dir is empty this will fail
             
             #base_name: name of file to create including path but without file ending (.zip)
             #root_dir is a directory that will be the root directory of the archive, all paths in the archive will be relative to it
@@ -278,7 +278,7 @@ def gen_filename(title):
 @login_required
 def new_capture_selection():
     #is an interface with monitor mode available?
-    if not interfaces.monitor_interface_available():
+    if not monitor_interface_available():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
         return redirect(url_for("settings"))
 
@@ -288,7 +288,7 @@ def new_capture_selection():
 @login_required
 def new_capture():
     #is an interface with monitor mode available?
-    if not interfaces.monitor_interface_available():
+    if not monitor_interface_available():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
         return redirect(url_for("settings"))
 
@@ -343,7 +343,8 @@ def _create_and_start_capture(capture_type: CaptureType, form):
 
     #create captureBehavior and start capture
     id = cap.id
-    interface = interfaces.monitor_iface
+    #there should be one since we have checked in new_capture
+    interface = get_interfaces(Mode.MONITOR)[0]
 
     if capture_type == CaptureType.CAPTURE_ALL:
         capture_behavior = CaptureAllBehavior(channel, gps_tracking)
@@ -423,7 +424,7 @@ def wardrive_capture_show(id):
 @login_required
 def detect_start():
     try:
-        start_scan(interfaces.monitor_iface.get_name())
+        start_scan(get_interfaces(Mode.MONITOR)[0].get_name())
         flash("Starting Access Point Scan", "success")
     except ValueError as e:
         flash(str(e), "danger")
@@ -446,7 +447,7 @@ def detect_get():
 @login_required
 def detect_aps():
     #is an interface with monitor mode available?
-    if not interfaces.monitor_interface_available():
+    if not monitor_interface_available():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
         return redirect(url_for("settings"))
 
