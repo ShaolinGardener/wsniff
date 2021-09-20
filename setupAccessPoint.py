@@ -1,3 +1,4 @@
+import os
 import sys
 import subprocess
 
@@ -79,6 +80,11 @@ rsn_pairwise=CCMP"""
 
 
 def main():
+    #check the script is run with sudo
+    if not os.geteuid() == 0:
+        print(f"{RED} [-] You have to run this script with root priviledges:{NC} 'sudo python3 setupAccessPoint.py'")
+        sys.exit()
+
     #get wifi country code - it is necessary to set up the access point
     country_code = None
     with open("/etc/wpa_supplicant/wpa_supplicant.conf", "r") as f:
