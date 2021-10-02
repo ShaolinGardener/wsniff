@@ -1,0 +1,23 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h1>Server Home</h1>
+    <p>You are now accessing server data.</p>
+
+    <div class="text-center mt-4 mb-4">
+      {% if not device_registered %}
+      <a class="btn btn-danger btn-lg" href="{{url_for('server_register_device')}}">Register this device</a>
+      {% else %}
+        {% if not admin %} 
+            <a class="btn btn-success btn-lg" href="{{url_for('server_connect')}}">Login as admin</a>
+        {% else %}
+            <a class="btn btn-success btn-lg" href="{{url_for('server_connect_device')}}">Connect device</a> 
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="">
+      {{ user }}
+    </div>
+    
+{% endblock content %}

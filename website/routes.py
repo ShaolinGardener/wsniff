@@ -3,7 +3,7 @@ from flask import render_template, url_for, flash, redirect, request, jsonify, s
 from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
-from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm
+from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm, ServerConnectionForm, ServerDeviceRegistrationForm
 from website.models import User, Capture, CaptureState, CaptureType
 
 import website.capture.capture as capture
@@ -14,6 +14,7 @@ import website.gps as gps
 from website.interfaces import Interface, get_interfaces, Mode, monitor_interface_available, get_all_interfaces
 import website.oui as oui
 from website.settings import WPA_SUPPLICANT_BACKUP_PATH
+import website.server as server
 
 import display.display as display
 
@@ -462,11 +463,73 @@ def get_stations(bssid, ssid):
     size = len(stations)
     return render_template("ap.html", title="Access Point", ssid=ssid, stations=stations, vendors=vendors, size=size)
 
-@app.route("/test")
+@app.route("/server/connect", methods=["GET", "POST"])
 @login_required
-def test():
-    display.wardrive()
-    return redirect(url_for("home"))
+def server_connect():
+    form = ServerConnectionForm()
+
+    if not form.validate_on_submit():
+        return render_template("connect_to_server.html", title="Connect to wsniff server", form=form)
+
+    domain = form.server_domain.data
+    username = form.username.data
+    password = form.password.data
+
+    server.set_domain(domain)
+    if not server.server_is_available():
+        flash("Server can't be reached. Please check your connection.", "danger")
+        return render_template("connect_to_server.html", title="Connect to wsniff server", form=form)
+
+    #try to autheticate
+    if not server.authenticate(username, password):
+        flash("Your login credentials are wrong", "danger")
+        return render_template("connect_to_server.html", title="Connect to wsniff server", form=form)
+
+    flash("You are now logged in on server as admin", "success") 
+    return redirect(url_for("server_home"))
+
+@app.route("/server", methods=["GET"])
+@login_required
+def server_home():
+    if not server.has_access():
+        return redirect(url_for("server_connect"))
+    
+    user = server.get('/users/me')
+    device_registered = server.is_device_registered()
+    is_admin = server.is_admin()
+    return render_template("server_home.html", title="Server", user=user, device_registered=device_registered, admin=is_admin)
+
+@app.route("/server/connect-device", methods=["GET", "POST"])
+@login_required
+def server_connect_device():
+    if server.connect_device():
+        flash("Device is connected.", "success")
+        return redirect(url_for('server_home')) 
+    else:
+        flash("Device could not connect.", "danger")
+        return redirect(url_for('server_connect')) 
+
+@app.route("/server/register", methods=["GET", "POST"])
+@login_required
+def server_register_device():
+    if not server.has_access():
+        return redirect(url_for("server_connect"))
+
+    form = ServerDeviceRegistrationForm()
+
+    if form.validate_on_submit():
+        device_name = form.device_name.data
+
+        #if device could be registered successfully and reauthetication worked
+        if server.register_device(device_name):
+            flash("Device was registered. Your device is now fully connected.", "success")
+            return redirect(url_for('server_home'))
+        else:
+            #it could be that there already is a device with that name
+            flash("Registration failed. Maybe there is already a device with that name.", "danger")
+    
+    return render_template("server_register_device.html", title="Register device", form=form)
+
 
 @app.route("/settings/wifi-external", methods=["GET", "POST"])
 @login_required

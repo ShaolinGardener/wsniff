@@ -2,10 +2,25 @@ import requests
 from requests.exceptions import Timeout, ConnectionError
 from requests.models import HTTPBasicAuth
 
+from website import app
+
+import os
+import configparser
+import secrets
+
 #a wsniff-server typically runs on port 4242
 SERVER_PORT = 4242
-SERVER_URL = "http://localhost"
-SERVER = f"{SERVER_URL}:{SERVER_PORT}"
+DOMAIN = ""
+SERVER = ""
+
+server_config_file = os.path.join(app.root_path, "static", "res", "server_config")
+
+def set_domain(domain: str):
+    global SERVER, DOMAIN
+    #needed for permanantly storing connection details
+    DOMAIN = domain
+    #used to connect to API
+    SERVER = f"http://{domain}:{SERVER_PORT}" 
 
 #use this for request calls (e.g. instead of requests.get() use session.get())
 #since you can set headers that will be valid for all subsequent requests instead of
@@ -70,6 +85,87 @@ def server_is_available(timeout: float = 10.0) -> bool:
         if data.get('message') == 'pong':
             return True
     except (ConnectionError, Timeout) as e:
+        return False
+
+def is_device_registered() -> bool:
+    if not os.path.isfile(server_config_file):
+        return False
+    return True
+
+def connect_device():
+    """
+    Returns false if device could connect, True otherwise.
+    """
+    if is_device_registered():
+        #load credentials and try to autheticate
+        config = configparser.ConfigParser()
+        config.read(server_config_file)
+        
+        domain = config['DEFAULT']['domain']
+        device_name = config['DEFAULT']['device_name']
+        pass_token = config['DEFAULT']['pass_token'] 
+
+        set_domain(domain)
+        return authenticate(device_name, pass_token)
+    return False
+
+def has_access() -> bool:
+    """
+    Returns True if the device is either already autheticated or can autheticate
+    with stored credentials for the server. Otherwise returns False.
+    """
+    try:
+        data, resp = get('/users/me')
+        if resp.status_code == 200:
+            return True
+    except:
+        pass
+    return connect_device()
+
+def is_admin() -> bool:
+    try:
+        data, resp = get('/users/me')
+        if resp.status_code != 200:
+            return False
+        
+        #if current user has admin rights
+        if data.get('user').get('admin'):
+            return True
+    except:
+        pass
+    return False
+
+def register_device(device_name: str):
+    """
+    Try to register this sniffer on the server.
+    Returns False if the registration could NOT be completed successfully,
+    otherwise True and the sniffer directly reauthenticates with its new credentials.
+    """
+    
+    #generate token that is used as a password to autheticate this sniffer on the server
+    pass_token = secrets.token_hex(32)
+
+    data = {'name': device_name, 'password': pass_token}
+    try:
+        data, resp = post('/users', data=data)
+        print(data)
+        if not resp.status_code == 200:
+            return False
+        
+        #store credentials in config file
+        config = configparser.ConfigParser()
+        config['DEFAULT'] = {
+            'device_name': device_name,
+            'pass_token': pass_token,
+            'domain': DOMAIN
+        }
+        with open(server_config_file, 'w') as config_file:
+            config.write(config_file)
+
+        #reauthenticate 
+        if authenticate(device_name, pass_token):
+            return True
+    except:
         return False
 
 

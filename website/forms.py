@@ -48,3 +48,14 @@ class ExternalWiFiForm(FlaskForm):
     ssid = StringField("SSID of external network", validators = [DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Save configuration")
+
+class ServerConnectionForm(FlaskForm):
+    server_domain = StringField("Server domain", validators =[DataRequired()], default="localhost")
+    username = StringField("Admin username", validators = [DataRequired()], default="admin")
+    password = PasswordField('Password', validators = [DataRequired()])
+    
+    submit = SubmitField("Connect")
+
+class ServerDeviceRegistrationForm(FlaskForm):
+    device_name = StringField("Name of sniffer", validators =[DataRequired(), Length(min=3, max=50)])
+    submit = SubmitField("Register this device") 

@@ -12,46 +12,55 @@ import display.display as display
 from scapy.all import *
 
 
-"""
-abstract base class for defining the capturing behavior of a capture
-"""
-class CaptureBehavior(ABC):
 
+class CaptureBehavior(ABC):
     """
-    important: called by a freshly created Capture-object cause both that and this object need a reference to each other
+    abstract base class for defining the capturing behavior of a capture
     """
+
+    
     def init(self, capture):
+        """
+        important: called by a freshly created Capture-object cause both that and this object need a reference to each other
+        """
         self.capture = capture
+    
+    def configure(self, options:dict):
+        self.options = options
 
     @abstractmethod
     def handle_packet(self, frame):
         pass
 
     #hook methods
-    """
-    called before first frame is captured
-    """
+    
     def start_capture(self):
+        """
+        called before first frame is captured
+        """
         pass
 
-    """
-    called after last frame has been captured
-    """
+    
     def stop_capture(self):
+        """
+        called after last frame has been captured
+        """
         pass
 
-"""
-do not capture any packets
-"""
+
 class TestBehavior:
+    """
+    do not capture any packets
+    """ 
     
     def handle_packet(self, frame):
         pass
 
-"""
-write all frames into a .pcap
-"""
+
 class CaptureAllBehavior(CaptureBehavior):
+    """
+    write all frames into a .pcap
+    """
 
     def __init__(self, channel, gps_tracking):
         self.channel = channel
@@ -106,10 +115,11 @@ class _AccessPoint():
         def __str__(self):
             return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
 
-"""
-can be used to create a map of access points / wardriving
-"""         
+       
 class MapAccessPointsBehavior(CaptureBehavior):
+    """
+    can be used to create a map of access points / wardriving
+    """  
     
     def __init__(self):
         #bssid as unique identifier, AccessPoint object as value
@@ -169,6 +179,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
                         line = f"{ap.t_last_seen};{ap.bssid};{ap.ssid};{ap.channel};{ap.signal_strength};{oui.lookup(ap.bssid)};{ap.lat};{ap.lon}\n" 
                         f.write(line)
                         del aps[bssid]
+
 
     def handle_packet(self, frame): 
         self.capture.num_packets += 1
