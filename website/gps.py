@@ -216,8 +216,10 @@ def _read_data():
 
             #only parse nmea messages that comprise GPS information
             if msg and hasattr(msg, 'lat') and hasattr(msg, 'lon'):
-                lat = float(msg.lat)
-                lon = float(msg.lon)
+                #get latitude and longitude (access values as decimal degreed instead of NMEA format)
+                #which is DDDMM.MMMM (degrees, minutes, seconds)
+                lat = msg.latitude 
+                lon = msg.longitude
 
                 if lat != 0.0 or lon != 0.0:
                     _gps_available = True

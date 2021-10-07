@@ -125,6 +125,7 @@ class EvenlyDistributedHopping(HoppingStrategy):
     The channel distance will be maximized here in order to prevent channel overlapping and 
     therefore trying to maximize the number of siffed beacons.
     Switching the channels will be random
+    Especially makes sense for 2.4GHz sniffing, but is also a good strategy for 5GHz
     """
     def __init__(self, delay):
         super().__init__()
@@ -155,6 +156,8 @@ class FOCC(HoppingStrategy):
     def __init__(self, t_learn: float, t_exp: float, generations:int=3):
         """
         Prefer channels which have shown in the past that they are inhabited by more APs.
+        Suggested if you use multiple interfaces.
+
         To prevent starving and take in new information, use a timeslot procedure with 
         2 types of timeslots:
         - one in which the channel is selected based on experience
@@ -268,7 +271,6 @@ class Hopper(Thread):
             #execute one hopping round
             channels = self.hop_strategy.get_hop(self.channel_stats)
             for i in range(len(channels)):
-                print(f"Switch to channel {channels[i]}")
                 self.interfaces[i].set_channel(channels[i])
 
             delay = self.hop_strategy.get_delay(self.channel_stats)

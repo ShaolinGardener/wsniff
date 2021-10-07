@@ -102,6 +102,7 @@ def stop_capture(id):
     """  
     try: 
         c = captures.pop(id)
+        
         c.stop()
     except:
         raise ValueError(f"Capture '{id}' can't be stopped since it does not exist.")

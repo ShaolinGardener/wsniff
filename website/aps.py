@@ -228,10 +228,6 @@ def start_scan(interface:str, t_remove:int=23, t_clean=7):
     available_interfaces = get_interfaces(Mode.MONITOR)
     hopper = Hopper(hopping_strategy, available_interfaces, list(range(1, 14)))
     hopper.start()
-    #hop through channels
-    # thread = Thread(target=hopper, args=(interface, ), name="hopper")
-    # thread.daemon = True
-    # thread.start()
 
     #scan packets to find beacon frames
     thread = Thread(target=scan, args=(interface,), name="scanner")

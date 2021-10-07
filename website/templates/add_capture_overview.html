@@ -10,7 +10,7 @@
         <div class="list-group mt-4">
             <a href="{{ url_for('new_capture', capture_type=1) }}" class="list-group-item list-group-item-action">
               <div class="mb-2">
-                <h4 class="mb-1">Full Capture</h3>
+                <h4 class="mb-1">Full Capture</h4>
               </div>
               <p class="mb-1">Here all packets including their payloads are captured. This mode is meant for the specific analysis of a chosen target. Optionally, GPS data can be recorded concurrently.</p>
               <small>Make sure your SD-card has enough free space left.</small>
@@ -18,11 +18,19 @@
             
             <a href="{{url_for('new_capture', capture_type=2)}}" class="list-group-item list-group-item-action">
                 <div class="mb-2">
-                  <h4 class="mb-1">Wardriving <span class="badge badge-primary badge-pill" style="float:right">New</span></h3>
+                  <h4 class="mb-1">Wardriving</h4>
                 </div>
                 <p class="mb-1">In this mode you should take the device on an extended walk through your city. You will get a nice map of all your local WiFi-networks.</p>
                 <small>This is really fun.</small>
-              </a>
+            </a>
+
+            <a href="{{url_for('new_capture', capture_type=3)}}" class="list-group-item list-group-item-action">
+              <div class="mb-2">
+                <h4 class="mb-1">Online Wardriving <span class="badge badge-primary badge-pill" style="float:right">New</span></h3>
+              </div>
+              <p class="mb-1">Let your sniffer be part of a network.</p>
+              <small>Performance: over 9000 ;)</small>
+          </a>
         </div>
     </div>
 

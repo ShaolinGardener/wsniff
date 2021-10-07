@@ -4,10 +4,10 @@ from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm, ServerConnectionForm, ServerDeviceRegistrationForm
-from website.models import User, Capture, CaptureState, CaptureType
+from website.models import User, Capture, CaptureState, CaptureType, Map
 
 import website.capture.capture as capture
-from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior
+from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior, OnlineMapBehavior
 import website.aps as aps
 from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
@@ -368,6 +368,9 @@ def new_capture():
     elif capture_type == CaptureType.WARDRIVING:
         capture_type = CaptureType.WARDRIVING
         form = WardrivingForm()
+    elif capture_type == CaptureType.ONLINE_WARDRIVING:
+        capture_type = CaptureType.ONLINE_WARDRIVING
+        form = WardrivingForm()
     else: #default 
         raise Exception("[-] This should not be possible because capture_type should have been set to CaptureAll by default")
 
@@ -415,6 +418,12 @@ def _create_and_start_capture(capture_type: CaptureType, form):
         capture_behavior = CaptureAllBehavior(channel, gps_tracking)
     elif capture_type == CaptureType.WARDRIVING:
         capture_behavior = MapAccessPointsBehavior()
+    elif capture_type == CaptureType.ONLINE_WARDRIVING:
+        map = Map(title=form.title.data, desc=form.desc.data, is_online=True)
+        print('created map')
+        db.session.add(map)
+        db.session.commit()
+        capture_behavior = OnlineMapBehavior(map)
     else:
         raise Exception("[-] This should not be possible.")
     
