@@ -1,23 +1,46 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-    <h1>Server Home</h1>
-    <p>You are now accessing server data.</p>
+<h1>Server Home</h1>
+<p>You are now accessing server data.</p>
 
-    <div class="text-center mt-4 mb-4">
-      {% if not device_registered %}
-      <a class="btn btn-danger btn-lg" href="{{url_for('server_register_device')}}">Register this device</a>
-      {% else %}
-        {% if not admin %} 
-            <a class="btn btn-success btn-lg" href="{{url_for('server_connect')}}">Login as admin</a>
-        {% else %}
-            <a class="btn btn-success btn-lg" href="{{url_for('server_connect_device')}}">Connect device</a> 
-        {% endif %}
-      {% endif %}
-    </div>
+<div class="text-center mt-4 mb-4">
+  {% if not device_registered %}
+  <a class="btn btn-danger btn-lg" href="{{url_for('server_register_device')}}">Register this device</a>
+  {% else %}
+    {% if not admin %} 
+        <a class="btn btn-success btn-lg" href="{{url_for('server_connect')}}">Login as admin</a>
+    {% else %}
+        <a class="btn btn-success btn-lg" href="{{url_for('server_connect_device')}}">Connect device</a> 
+    {% endif %}
+  {% endif %}
+</div>
 
-    <div class="">
-      {{ user }}
+<div class="">
+  {{ user }}
+</div>
+
+<div>
+  <h2>Online Wardriving Maps</h2>
+    {% if not running %}
+      <p>Currently there is no running capture</p>
+      <p class="text-muted">Want to <a href="{{url_for('new_capture_selection')}}">start one now</a>?</p>
+    {% endif %}
+    {% for capture in running %}
+    <div class="card">
+        <div class="card-header text-muted">
+            Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
+            Id: {{ capture.id }}
+            GPS: {{ capture.gps }}
+        </div>
+        <div class="card-body">
+        <h5 class="card-title">{{ capture.title }}</h5>
+        <p class="card-text">{{ capture.desc }}</p>
+        <a href="{{ url_for('capture_show', id=capture.id) }}" class="btn btn-info mb-1">Show capture</a>
+        <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger mb-1">Stop capture</a>
+        </div>
     </div>
+    {% endfor %}
+</div><!-- end running captures -->
     
 {% endblock content %}

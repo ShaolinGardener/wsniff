@@ -32,6 +32,9 @@ from scapy.all import *
 @app.route("/")
 @login_required
 def home(path=""):
+    """
+    Route for dashboard with all running and finished captures
+    """
     running_ids = capture.get_running_ids()
     running_ids.sort()
     
@@ -51,8 +54,13 @@ def home(path=""):
     return render_template("home.html", title="Home", interface_available=interface_available, running=running_captures, old_capture_all=old_captures_capture_all, old_wardriving=old_captures_wardriving)
 
 
+#############################################USER RELATED#########################################
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    """
+    Route for user registration
+    """
     #redirect if user is already logged in
     if current_user.is_authenticated:
         return redirect(url_for("home"))
@@ -70,6 +78,9 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    If a user needs authetication, he is redirected to this route.
+    """
     #redirect if user is already logged in
     if current_user.is_authenticated:
         return redirect(url_for("home"))
@@ -94,6 +105,9 @@ def login():
 
 @app.route("/logout")
 def logout():
+    """
+    Logout user
+    """
     logout_user()
 
     flash("You are now logged out!", category="success")
@@ -103,13 +117,21 @@ def logout():
 @app.route("/settings")
 @login_required
 def settings():
+    """
+    Display the settings of this device
+    """
     managed = get_interfaces(Mode.MANAGED)
     monitor = get_interfaces(Mode.MONITOR)
     gps_running = gps.gps_is_running()
     return render_template("settings.html", title="Settings", managed=managed, monitor=monitor, gps_running=gps_running)
 
+########################################HARDWARE RELATED#########################################
+
 @app.route("/settings/reboot")
 def reboot():
+    """
+    Reboot the device
+    """
     #clear temp dir
     temp_dirpath = os.path.join(app.root_path, "static", "tmp", "*")
     subprocess.run("rm " + temp_dirpath, shell=True, check=False) #check=False because it can be empty and then this command will fail
@@ -123,6 +145,9 @@ def reboot():
 
 @app.route("/settings/shutdown")
 def shutdown():
+    """
+    Shutdown the device
+    """
     #clear temp dir
     temp_dirpath = os.path.join(app.root_path, "static", "tmp", "*")
     subprocess.run("rm " + temp_dirpath, shell=True, check=False) #check=False because it can be empty and then this command will fail
@@ -137,6 +162,9 @@ def shutdown():
 @app.route("/settings/interfaces/<string:interface>/monitor/activate")
 @login_required
 def activate_monitor(interface:str):
+    """
+    Activate the monitor mode for a given interface
+    """
     try:
         iface = get_all_interfaces()[interface]
         iface.enable_monitor_mode()
@@ -150,6 +178,9 @@ def activate_monitor(interface:str):
 @app.route("/settings/interfaces/<string:interface>/monitor/deactivate")
 @login_required
 def deactivate_monitor(interface:str):
+    """
+    Return an interface to managed mode
+    """
     try:
         iface = get_all_interfaces()[interface]
         iface.disable_monitor_mode()
@@ -163,6 +194,9 @@ def deactivate_monitor(interface:str):
 @app.route("/settings/oui/update")
 @login_required
 def update_oui():
+    """
+    Update the oui information of this device
+    """
     oui_dirpath = os.path.join(app.root_path, "static", "res")
     try:
         oui.download(to_directory=oui_dirpath)
@@ -175,11 +209,14 @@ def update_oui():
     return redirect(url_for("settings"))
 
 
-#GPS SECTION
+########################################GPS SECTION############################################
 
 @app.route("/gps/start")
 @login_required
 def gps_start():
+    """
+    Start GPS tracking of the device
+    """
     gps.start_gps_tracking()
     flash("Started GPS Module", "success")
     return redirect(url_for("gps_show"))
@@ -187,6 +224,9 @@ def gps_start():
 @app.route("/gps/stop")
 @login_required
 def gps_stop():
+    """
+    Stop GPS tracking of the device
+    """
     gps.stop_gps_tracking()
     flash("Stopped GPS Module", "success")
     return redirect(url_for("gps_show"))
@@ -194,18 +234,23 @@ def gps_stop():
 @app.route("/gps")
 @login_required
 def gps_show():
+    """
+    Route for testing gps tracking
+    """
     available = gps.is_gps_available()
     lat, lon = gps.get_gps_data()
     running = gps.gps_is_running()
     return render_template("gps.html", available=available, lat=lat, lon=lon, running=running)
 
 
-
-#CAPTURE SECTION
+#########################################CAPTURE SECTION#########################################
 
 @app.route("/capture/<int:id>/stop")
 @login_required
 def capture_stop(id):
+    """
+    Stop a certain capture
+    """
     title = request.args.get("title")
     if not title: title = ""
     
@@ -223,6 +268,9 @@ def capture_stop(id):
 @app.route("/capture/<int:id>")
 @login_required
 def capture_get(id):
+    """
+    Get the updated data of a certain capture
+    """
     try:
         c = capture.get_capture(id) 
     except ValueError as e:
@@ -233,6 +281,9 @@ def capture_get(id):
 
 @app.route("/capture/<int:id>/show")
 def capture_show(id):
+    """
+    Display a certain capture
+    """
     try:
         capture = Capture.query.get(id)
         return render_template("capture.html", title="Show Capture", capture=capture)
@@ -242,6 +293,9 @@ def capture_show(id):
 
 @app.route("/capture/<int:id>/download")
 def capture_download(id):
+    """
+    Transfer capture data to terminal device (e.g. laptop) by zipping the corresponding data
+    """
     c = Capture.query.get(id)
     if c:
         dir_path = os.path.join(app.root_path, "static", "captures", str(c.id))
@@ -265,6 +319,9 @@ def capture_download(id):
     return redirect(url_for("home"))
 
 def gen_filename(title):
+    """
+    Generate unique filename
+    """
     fn = ""
     while True:
         fn = secrets.token_hex(10) + ".cap"
@@ -278,6 +335,9 @@ def gen_filename(title):
 @app.route("/capture/new/select")
 @login_required
 def new_capture_selection():
+    """
+    Show all caputure modes available
+    """
     #is an interface with monitor mode available?
     if not monitor_interface_available():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
@@ -288,6 +348,9 @@ def new_capture_selection():
 @app.route("/capture/new", methods=["GET", "POST"])
 @login_required
 def new_capture():
+    """
+    Show form to user depending on capture mode
+    """
     #is an interface with monitor mode available?
     if not monitor_interface_available():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
@@ -316,10 +379,11 @@ def new_capture():
 
     return render_template("add_capture.html", title="Add Capture", capture_type=capture_type, form=form, gps_available=gps_available)
 
-"""
-called by new_capture
-"""
+
 def _create_and_start_capture(capture_type: CaptureType, form):
+    """
+    Actually starts a new capture. Called by new_capture.
+    """
     #add to db
     title = form.title.data
     filename = gen_filename(title)
@@ -370,6 +434,9 @@ def _create_and_start_capture(capture_type: CaptureType, form):
 @app.route("/capture/<int:id>/delete")
 @login_required
 def capture_delete(id: int):
+    """
+    Delete a capture including its DB entries and files.
+    """
     c = Capture.query.get(id)
     if c:
         path = os.path.join(app.root_path, "static", "captures", str(c.id))
@@ -388,6 +455,9 @@ def capture_delete(id: int):
 #WARDRIVE capture
 #read data from file
 def load_from_file(filepath):
+    """
+    Load GPS data from file
+    """
     f = open(filepath, "r")
     data = list()
 
@@ -410,6 +480,9 @@ def load_from_file(filepath):
 @app.route("/wardrive/<int:id>")
 @login_required
 def wardrive_capture_show(id):
+    """
+    Show a wardriving map
+    """
     try:
         capture = Capture.query.get(id)
         filepath = os.path.join(app.root_path, "static", "captures", str(capture.id), "wardrive.txt")
@@ -420,10 +493,13 @@ def wardrive_capture_show(id):
         return redirect(url_for("home")) 
 
 
-#ACCESS POINT DETECTION
+##################################ACCESS POINT DETECTION##########################################
 @app.route("/detect/start")
 @login_required
 def detect_start():
+    """
+    Start the detection of APs
+    """
     try:
         start_scan(get_interfaces(Mode.MONITOR)[0].get_name())
         flash("Starting Access Point Scan", "success")
@@ -434,6 +510,9 @@ def detect_start():
 @app.route("/detect/stop")
 @login_required
 def detect_stop():
+    """
+    Stop the detection of APs
+    """
     stop_scan()
     flash("Stopped Access Point Scan", "success")
     return redirect(url_for("detect_aps")) 
@@ -441,12 +520,18 @@ def detect_stop():
 @app.route("/detect/get")
 @login_required
 def detect_get():
+    """
+    Get update on current devices. 
+    """
     aps = get_aps()
     return jsonify(aps=aps)
 
 @app.route("/detect")
 @login_required
 def detect_aps():
+    """
+    Display detection information on webapp
+    """
     #is an interface with monitor mode available?
     if not monitor_interface_available():
         flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
@@ -458,14 +543,23 @@ def detect_aps():
 @app.route("/detect/aps/<string:bssid>/<string:ssid>")
 @login_required
 def get_stations(bssid, ssid):
+    """
+    Get all stations associated with a certain AP
+    """
     stations = aps.get_stations_for(bssid)
     vendors = [oui.lookup(station) for station in stations]
     size = len(stations)
     return render_template("ap.html", title="Access Point", ssid=ssid, stations=stations, vendors=vendors, size=size)
 
+
+###########################################SERVER RELATED###########################################
+
 @app.route("/server/connect", methods=["GET", "POST"])
 @login_required
 def server_connect():
+    """
+    Try to connect to server with admin account
+    """
     form = ServerConnectionForm()
 
     if not form.validate_on_submit():
@@ -491,6 +585,9 @@ def server_connect():
 @app.route("/server", methods=["GET"])
 @login_required
 def server_home():
+    """
+    Display base site of server
+    """
     if not server.has_access():
         return redirect(url_for("server_connect"))
     
@@ -502,6 +599,9 @@ def server_home():
 @app.route("/server/connect-device", methods=["GET", "POST"])
 @login_required
 def server_connect_device():
+    """
+    Try to connect this device using stored credentials
+    """
     if server.connect_device():
         flash("Device is connected.", "success")
         return redirect(url_for('server_home')) 
@@ -512,6 +612,9 @@ def server_connect_device():
 @app.route("/server/register", methods=["GET", "POST"])
 @login_required
 def server_register_device():
+    """
+    Register this device on the server and store credentials for future access
+    """
     if not server.has_access():
         return redirect(url_for("server_connect"))
 
@@ -534,6 +637,10 @@ def server_register_device():
 @app.route("/settings/wifi-external", methods=["GET", "POST"])
 @login_required
 def configure_external_wifi():
+    """
+    Store credentials to access other Wi-Fi networks. 
+    You need a reboot to actually connect to that network with your raspberry.
+    """
 
     form = ExternalWiFiForm()
     if form.validate_on_submit():

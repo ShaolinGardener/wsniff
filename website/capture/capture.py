@@ -30,6 +30,10 @@ class Capture:
         self._stop = Event()
 
     def _handle_packet(self, pkt):
+        """
+        Called every time a new packet has been sniffed. 
+        The processing of the packet depends on the capture behavior.
+        """
         #call hook
         self.capture_behavior.handle_packet(pkt)
         

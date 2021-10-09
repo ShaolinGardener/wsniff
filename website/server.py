@@ -191,6 +191,12 @@ def authenticate(username: str, password: str):
     set_auth_token(token)
     return True
 
+
+
+########################################API related code########################################
+
+
+
 if __name__ == '__main__':
     data, resp = get('/users')
     print(data)

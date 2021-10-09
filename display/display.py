@@ -60,12 +60,13 @@ class Display(ABC):
     def disable_partial():
         pass
 
-"""
-A GhostDisplay object is used in case the raspberry pi is not using a
-display. This way, we don't have to add a ton of if-statements in other
-code to check whether there is really a display.
-"""
+
 class GhostDisplay():
+    """
+    A GhostDisplay object is used in case the raspberry pi is not using a
+    display. This way, we don't have to add a ton of if-statements in other
+    code to check whether there is really a display.
+    """
     def draw_string(self, str, x, y):
         pass
 
@@ -94,11 +95,12 @@ class GhostDisplay():
         pass
 
 
-"""
-This class actually encapsulates the waveshare e-ink display.
-"""
+
 class RealDisplay():
     def __init__(self):
+        """
+        This class actually encapsulates the waveshare e-ink display.
+        """
         #this should be called on initialization
         #create E-Paper-Display object
         self.epd = epd2in13_V2.EPD()

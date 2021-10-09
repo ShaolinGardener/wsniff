@@ -45,6 +45,9 @@ class GPSRoute():
         self._stop = Event()
 
     def _add_waypoint(self, latitude: float, longitude: float):
+        """
+        Add a single point to the gps route
+        """
         new = (time(), latitude, longitude)
         self.waypoints.append(new)
 
@@ -58,6 +61,9 @@ class GPSRoute():
             sleep(self.t_sample_delay)
 
     def start_capture(self):
+        """
+        Start thread for capturing a route of gps data
+        """
         self.t = Thread(target=self._capture, name="gps route tracker")
         self.t.setDaemon(True)
         self.t.start()
@@ -79,6 +85,9 @@ class GPSRoute():
         f.close()
 
     def load_from_file(self):
+        """
+        Load GPS route from file
+        """
         f = open(self.filepath, "r")
         self.waypoints = []
 
@@ -91,6 +100,9 @@ class GPSRoute():
         f.close()
 
     def get_gpx(self):
+        """
+        Returns the data of the gps route in the GPX format
+        """
         header = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
                     <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="wsniff"
                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -143,14 +155,18 @@ def get_gps_data():
     _lock.release()
     return lat, lon
 
-"""
-returns if this is a valid gga message or if it has been currupted
-raises ChecksumException in case the message has been corrupted
-"""
+
 class ChecksumException(Exception):
+    """
+    returns if this is a valid gga message or if it has been currupted
+    raises ChecksumException in case the message has been corrupted
+    """
     pass
 
 def check_gga_checksum(line: str, given_checksum: str):
+    """
+    Checks whether given NMEA message is valid or if it has been corrupted somehow
+    """
     #checksum is defined as XOR of all characters in the message after '$' to the beginning of the checksum (*) and is represented as a hex number
     #see protocol: http://navspark.mybigcommerce.com/content/NMEA_Format_v0.1.pdf
     relevant_for_checksum = line[1:line.rfind("*")]
@@ -164,19 +180,23 @@ def check_gga_checksum(line: str, given_checksum: str):
         return True
     raise ChecksumException("[-] Checksum of GGA message was incorrect")
 
-"""
-returns gps data in float format (which can be pasted in google for example and is needed for leaflet maps)
-found this code on github:
-Link:       https://github.com/Knio/pynmea2/blob/2dab8f59045365463a33013cd1f95140943193fd/pynmea2/nmea_utils.py#L33
-Licence:    https://github.com/Knio/pynmea2/blob/2dab8f59045365463a33013cd1f95140943193fd/LICENSE
-"""
+
 def convert(coordinate):
+    """
+    returns gps data in float format (which can be pasted in google for example and is needed for leaflet maps)
+    found this code on github:
+    Link:       https://github.com/Knio/pynmea2/blob/2dab8f59045365463a33013cd1f95140943193fd/pynmea2/nmea_utils.py#L33
+    Licence:    https://github.com/Knio/pynmea2/blob/2dab8f59045365463a33013cd1f95140943193fd/LICENSE
+    """
     if not coordinate or coordinate == "0":
         return 0.0
     d, m = re.match(r'^(\d+)(\d\d\.\d+)$', coordinate).groups()
     return float(d) + float(m) / 60
 
 def _read_data():
+    """
+    Here the actual tracking takes place
+    """
     global _current_position
     global _gps_available
 

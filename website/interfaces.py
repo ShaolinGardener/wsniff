@@ -8,6 +8,10 @@ class Mode(Enum):
         MONITOR = 2
 
 class Interface:
+    """
+    For each WLAN/Wi-Fi adapter a user connects to the raspberry, a new instance of this
+    class is created. It offers some helpful methods to access the hardware.
+    """
 
     def __init__(self, name: str, mode:Mode = Mode.MANAGED):
         self.mode = mode
@@ -16,9 +20,11 @@ class Interface:
             #assuming it follows this pattern of ending monitoring interfaces with 'mon'
             self.name = name[:-3] 
             self.mon_name = name
+            self.current_name = name
         else:
             self.name = name
             self.mon_name = name + "mon"
+            self.current_name = name
 
         self.str_monitor_enable  = f"ifconfig {self.name} down; iw dev {self.name} interface add {self.mon_name} type monitor; ifconfig {self.mon_name} down; iw dev {self.mon_name} set type monitor; ifconfig {self.mon_name} up"
         self.str_monitor_disable = f"iw dev {self.mon_name} del; ifconfig {self.name} up"
@@ -35,35 +41,37 @@ class Interface:
 
     def enable_monitor_mode(self):
         """
+        Enables monitor mode of interface.
         raises subprocess.CalledProcessError error in case some error occurs
         """
         subprocess.run(self.str_monitor_enable, shell=True, check=True)
         self.mode = Mode.MONITOR
+        self.current_name = self.mon_name
         print(f"[+] Activated monitor mode for {self.name}")
 
     def disable_monitor_mode(self):
         """
+        Returns this interface to managed mode.
         raises subprocess.CalledProcessError error in case some error occurs
         """
         
         subprocess.run(self.str_monitor_disable, shell=True, check=True)
         self.mode = Mode.MANAGED
+        self.current_name = self.name
         print(f"[+] Deactivated monitor mode for {self.name}")
 
     def set_channel(self, channel: int):
         """
+        Sets the channel of this interface to the given value.
         raises subprocess.CalledProcessError error in case some error occurs
         """
-        if self.mode == Mode.MONITOR:
-            n = self.mon_name
-        else:
-            n = self.name
-        subprocess.run(f"iwconfig {n} channel {channel}", shell=True, check=True)
+        subprocess.run(f"iwconfig {self.current_name} channel {channel}", shell=True, check=True)
 
 
 def _get_interface_names():
     """
-    Returns: a list of all interfaces
+    Get the names of all interfaces that are currently plugged in the raspberry
+    Returns: a list of all interfaces as strings
     """
     if sys.platform.startswith('linux'):
         #here infos about available network interfaces are stored (along their name)
@@ -76,7 +84,7 @@ def _get_interface_names():
 
 def _get_wireless_interface_names():
     """
-    Only get wireless interfaces
+    Only get wireless interfaces that are currently plugged in as a list of strings.
     """
     ifaces = _get_interface_names()
     return list(filter(lambda iface: "wlan" in iface, ifaces))
@@ -84,6 +92,9 @@ def _get_wireless_interface_names():
 
 
 def monitor_interface_available():
+    """
+    Returns if there is at least one interface in monitor mode connected to the raspberry.
+    """
     #wireless interfaces
     iw = _get_wireless_interface_names() 
     #get wireless interfaces in monitor mode

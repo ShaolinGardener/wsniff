@@ -6,6 +6,9 @@ NC='\033[0m' #no color/back to default
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 def execute_shell_cmd(cmd: str, input=None):
+    """
+    Execute a shell command and print error messages in case it failed.
+    """
     print("[*] Trying to run:", cmd)
     try:
         proc_res = subprocess.run(cmd, text=True, capture_output=True, input=input, shell=True, check=True)
