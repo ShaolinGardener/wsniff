@@ -8,6 +8,8 @@ import os
 import configparser
 import secrets
 
+from website.models import Discovery
+
 #a wsniff-server typically runs on port 4242
 SERVER_PORT = 4242
 DOMAIN = ""
@@ -191,7 +193,10 @@ def authenticate(username: str, password: str):
     set_auth_token(token)
     return True
 
-
+def add_discovery(d: Discovery):
+    if d.is_uploaded:
+        return
+        
 
 ########################################API related code########################################
 

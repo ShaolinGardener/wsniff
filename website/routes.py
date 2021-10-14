@@ -15,6 +15,7 @@ from website.interfaces import Interface, get_interfaces, Mode, monitor_interfac
 import website.oui as oui
 from website.settings import WPA_SUPPLICANT_BACKUP_PATH
 import website.server as server
+import website.api as api
 
 import display.display as display
 
@@ -419,10 +420,26 @@ def _create_and_start_capture(capture_type: CaptureType, form):
     elif capture_type == CaptureType.WARDRIVING:
         capture_behavior = MapAccessPointsBehavior()
     elif capture_type == CaptureType.ONLINE_WARDRIVING:
-        map = Map(title=form.title.data, desc=form.desc.data, is_online=True)
-        print('created map')
-        db.session.add(map)
-        db.session.commit()
+        title = form.title.data
+        desc = form.desc.data
+        #try to create map online
+        try:
+            #create new map on server
+            server_map_id = api.create_map(title, description=desc)
+            #create local instance of map
+            map = Map(title=title, desc=desc, is_online=True, server_map_id=server_map_id)
+            try: 
+                db.session.add(map)
+                db.session.commit()
+            except:
+                flash("Local map creation failed.", "danger")
+                return 
+        except:
+            flash("Online map creation failed.", "danger")
+            return 
+        
+        #if the map creation on both the server and the local machine worked, 
+        #create capture behavior
         capture_behavior = OnlineMapBehavior(map)
     else:
         raise Exception("[-] This should not be possible.")

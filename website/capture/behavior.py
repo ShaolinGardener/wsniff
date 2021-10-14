@@ -9,6 +9,7 @@ import website.gps as gps
 import website.oui as oui
 from website.interfaces import Interface, get_interfaces, Mode
 from website.capture.hopper import Hopper, HoppingStrategy, EvenlyDistributedHopping
+from website.api import upload_discovery
 
 import display.display as display
 
@@ -280,8 +281,10 @@ class OnlineMapBehavior(CaptureBehavior):
         try:
             db.session.add(d)
             db.session.commit()
+            return d
         except:
             print("[-] Adding discovery to DB failed.")
+            return None
 
 
     def clean(self, t_remove=180, t_sleep=30):
@@ -337,14 +340,16 @@ class OnlineMapBehavior(CaptureBehavior):
         self.hopper.stop_hopping()
         self.cleaning_thread.join()
 
-        #store in DB
+        #store APs in DB if not done so before
         for bssid in self.aps:
-            #better to read here than f"-Syntax
             ap = self.aps[bssid]
-            self.add_discovery(ap)
-
-        #try to upload data to server (using multiple TAs)
-        #FIXME
-
+            d = self.add_discovery(ap)
+        #clear dict
         self.aps.clear()
+
+        #try to upload all discoveries to server
+        discoveries = self.map.discoveries
+        for discovery in discoveries:
+            upload_discovery(discovery)
+        
         print("[+] Finished wardriving activity.")

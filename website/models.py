@@ -82,8 +82,12 @@ class Map(db.Model):
     #all discoveries that were made creating this map
     discoveries = db.relationship('Discovery', back_populates='map')
 
+    #The following attributes are only needed for OnlineMaps
     #indicates whether this is a LocalMap or an OnlineMap
-    is_online = db.Column(db.Boolean, nullable=False)
+    is_online = db.Column(db.Boolean, nullable=False, default=False)
+    #in order to add new discoveries to the right map ON THE SERVER, we have to store
+    #correspondig map id of the map on the server
+    server_map_id = db.Column(db.Integer, nullable=False)
 
     #OnlineMaps have a server attribute (but can also be NULL for LocalMaps)
     server_id = db.Column(db.Integer, db.ForeignKey('server.id', ondelete='CASCADE'), nullable=True)
@@ -121,6 +125,9 @@ class Discovery(db.Model):
 
     #NULL allowed for hidden APs
     ssid = db.Column(db.String(64))
+
+    #whether this discovery has been uploaded to server
+    is_uploaded = db.Column(db.Boolean(), nullable=False, default=False)
     
     #TODO
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
