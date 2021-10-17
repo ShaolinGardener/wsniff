@@ -1,5 +1,5 @@
 from website import db
-from website.server import post, get
+from website.server import post, get, delete
 from website.models import Discovery
 
 
@@ -22,6 +22,23 @@ def create_map(title, description=None):
 
     #else: everything is fine
     return data.get("map_id")
+
+def delete_map(id):
+    """
+    Delete the map with this id
+    """
+    data, resp = delete(f'/maps/{id}')
+    if resp.status_code == 200:
+        return True
+    else:
+        return False
+
+def get_all_maps():
+    """
+    Returns all maps on server as dict.
+    """
+    data, resp = get('/maps')
+    return data.get("maps", {})
 
 def upload_discovery(d: Discovery):
     """

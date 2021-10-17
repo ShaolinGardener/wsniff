@@ -4,43 +4,44 @@
 <h1>Server Home</h1>
 <p>You are now accessing server data.</p>
 
-<div class="text-center mt-4 mb-4">
-  {% if not device_registered %}
-  <a class="btn btn-danger btn-lg" href="{{url_for('server_register_device')}}">Register this device</a>
+{% if not device_registered %}
+<div class="card mt-4 mb-4">
+  <div class="card-body text-justify">
+    This device has not been registered on the server yet. In order to participate, please click "Register".
+    <div class="text-center">
+      <a class="btn btn-danger btn-lg mt-4" href="{{url_for('server_register_device')}}">Register this device now</a>
+    </div>
+  </div>
+</div>
+{% else %} <!-- if device IS registered -->
+<div class="text-center">
+  {% if not admin %} 
+      <a class="btn btn-success btn-lg" href="{{url_for('server_connect')}}">Login as admin</a>
   {% else %}
-    {% if not admin %} 
-        <a class="btn btn-success btn-lg" href="{{url_for('server_connect')}}">Login as admin</a>
-    {% else %}
-        <a class="btn btn-success btn-lg" href="{{url_for('server_connect_device')}}">Connect device</a> 
-    {% endif %}
+      <a class="btn btn-success btn-lg" href="{{url_for('server_connect_device')}}">Connect device</a> 
   {% endif %}
 </div>
+{% endif %}
 
-<div class="">
-  {{ user }}
-</div>
-
-<div>
+{% if device_registered %}
+<div class="mt-3">
   <h2>Online Wardriving Maps</h2>
-    {% if not running %}
-      <p>Currently there is no running capture</p>
-      <p class="text-muted">Want to <a href="{{url_for('new_capture_selection')}}">start one now</a>?</p>
-    {% endif %}
-    {% for capture in running %}
+    {% for map in maps %}
     <div class="card">
         <div class="card-header text-muted">
-            Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
-            Id: {{ capture.id }}
-            GPS: {{ capture.gps }}
+            Created: {{ map.get("date_created") }}
+            Id: {{ map.get("id") }}
         </div>
         <div class="card-body">
-        <h5 class="card-title">{{ capture.title }}</h5>
-        <p class="card-text">{{ capture.desc }}</p>
-        <a href="{{ url_for('capture_show', id=capture.id) }}" class="btn btn-info mb-1">Show capture</a>
-        <a href="{{ url_for('capture_stop', id=capture.id) }}" class="btn btn-danger mb-1">Stop capture</a>
+        <h5 class="card-title">{{ map.get("title") }}</h5>
+        <p class="card-text">{{ map.get("desc") }}</p>
+        <a href="{{ url_for('server_map_show', id=map.get('id')) }}" class="btn btn-info mb-1">Show map</a>
+        <a href="{{ url_for('server_map_participate', id=map.get('id')) }}" class="btn btn-info mb-1">Participate</a>
+        <a href="{{ url_for('server_map_delete', id=map.get('id')) }}" class="btn btn-danger mb-1">Delete</a>
         </div>
     </div>
     {% endfor %}
-</div><!-- end running captures -->
+</div><!-- end of maps -->
+{% endif %}
     
 {% endblock content %}

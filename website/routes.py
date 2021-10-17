@@ -620,7 +620,8 @@ def server_home():
     user = server.get('/users/me')
     device_registered = server.is_device_registered()
     is_admin = server.is_admin()
-    return render_template("server_home.html", title="Server", user=user, device_registered=device_registered, admin=is_admin)
+    maps = api.get_all_maps()
+    return render_template("server_home.html", title="Server", user=user, device_registered=device_registered, admin=is_admin, maps=maps)
 
 @app.route("/server/connect-device", methods=["GET", "POST"])
 @login_required
@@ -659,6 +660,24 @@ def server_register_device():
     
     return render_template("server_register_device.html", title="Register device", form=form)
 
+@app.route("/server/maps/<id>/show", methods=["GET"])
+@login_required
+def server_map_show(id):
+    pass
+
+@app.route("/server/maps/<id>/participate", methods=["GET"])
+@login_required
+def server_map_participate(id):
+    pass
+
+@app.route("/server/maps/<id>", methods=["GET"])
+@login_required
+def server_map_delete(id):
+    if api.delete_map(id):
+        flash("Map was deleted", "success")
+    else:
+        flash("Map could not be deleted", "danger")
+    return redirect(url_for("server_home"))
 
 @app.route("/settings/wifi-external", methods=["GET", "POST"])
 @login_required

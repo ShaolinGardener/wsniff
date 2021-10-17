@@ -69,7 +69,14 @@ def post(endpoint: str, data:dict=None, timeout=0, headers:dict=None):
     else:
         resp = session.post(f"{SERVER}{endpoint}", json=data, timeout=timeout)
     
-    return resp.json(), resp 
+    return resp.json(), resp
+
+def delete(endpoint: str):
+    """
+    Executes a HTTP request of type DELETE
+    """
+    resp = session.delete(f"{SERVER}{endpoint}") 
+    return resp.json(), resp
 
 def server_is_available(timeout: float = 10.0) -> bool:
     """
