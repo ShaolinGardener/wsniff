@@ -34,6 +34,17 @@ session = requests.Session()
 #methods: content() -> raw bytes of resp payload; text() -> string repr of payload; 
 #         json() -> if the response payload is a JSON string, this returns a dict
 
+#The connect timeout is the number of seconds requests will wait for your 
+#client to establish a connection to the server (corresponding to the connect()) call 
+#on the socket. It’s a good practice to set connect timeouts to slightly larger 
+#than a multiple of 3, which is the default TCP packet retransmission window.
+_CONNECT_TIMEOUT = 3.1
+
+#Once your client has connected to the server and sent the HTTP request, 
+#the read timeout is the number of seconds the client will wait for the server
+#to send a response (till the first byte is sent)
+_READ_TIMEOUT = 7
+
 def get(endpoint: str, params:dict=None, headers:dict=None):
     """
     Executes a GET request to the API and returns the JSON response. 
@@ -44,10 +55,10 @@ def get(endpoint: str, params:dict=None, headers:dict=None):
 
     returns: (JSON response as dict, response object so you can get all its other attributes)
     """
-    resp = session.get(f"{SERVER}{endpoint}", params=params)
+    resp = session.get(f"{SERVER}{endpoint}", params=params, timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT))
     return resp.json(), resp 
 
-def post(endpoint: str, data:dict=None, timeout=0, headers:dict=None):
+def post(endpoint: str, data:dict=None, timeout=None, headers:dict=None):
     """
     Executes a POST to the API and returns the JSON response. 
     
@@ -55,19 +66,22 @@ def post(endpoint: str, data:dict=None, timeout=0, headers:dict=None):
     data: a dict with the data that should be posted as JSON 
     timeout: if the server does start a response within this time (in s), 
             this will cause a Timeout exception
-            Otherwise, the request will never time out
+            Otherwise, the request will use default values
     headers: e.g. {'user-agent': 'my-app/0.0.1'}
 
     returns: (JSON response as dict, response object so you can get all its other attributes)
     """
     if not timeout:
-        #such a request will never time out
-        #it is important to use the json and not the data parameter of requests.post since
-        #only then requests will convert the dict to a JSON string and set the correct
-        #Content-Type of the request
-        resp = session.post(f"{SERVER}{endpoint}", json=data)
+        #if there is no explicit timeout given, use the default timeout values
+        timeout = (_CONNECT_TIMEOUT, _READ_TIMEOUT)
     else:
-        resp = session.post(f"{SERVER}{endpoint}", json=data, timeout=timeout)
+        timeout = timeout
+    
+    #such a request will never time out
+    #it is important to use the json and not the data parameter of requests.post since
+    #only then requests will convert the dict to a JSON string and set the correct
+    #Content-Type of the request
+    resp = session.post(f"{SERVER}{endpoint}", json=data, timeout=timeout)
     
     return resp.json(), resp
 
@@ -75,7 +89,7 @@ def delete(endpoint: str):
     """
     Executes a HTTP request of type DELETE
     """
-    resp = session.delete(f"{SERVER}{endpoint}") 
+    resp = session.delete(f"{SERVER}{endpoint}", timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT)) 
     return resp.json(), resp
 
 def server_is_available(timeout: float = 10.0) -> bool:
