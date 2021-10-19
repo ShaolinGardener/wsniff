@@ -28,6 +28,7 @@ def set_domain(domain: str):
 #since you can set headers that will be valid for all subsequent requests instead of
 #having to send them again every time
 session = requests.Session()
+current_api_token = None
 
 #just as a quick help: response object 
 #attributes: status_code (int); headers (dict)
@@ -194,8 +195,13 @@ def register_device(device_name: str):
 
 
 def set_auth_token(token: str):
+    global current_api_token
     session.headers.update({'x-access-token': token})
+    current_api_token = token
 
+def get_auth_token():
+    return current_api_token
+    
 def authenticate(username: str, password: str):
     """
     Try to autheticate with username and password.

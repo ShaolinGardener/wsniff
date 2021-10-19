@@ -33,12 +33,22 @@ def delete_map(id):
     else:
         return False
 
+def get_map(id: int):
+    """
+    Returns map with the given id
+    """
+    data, resp = get(f'/maps/{id}')
+    if resp.status_code != 200:
+        raise ApiException(data.get('message'))
+    return data.get("map")
+
 def get_all_maps():
     """
     Returns all maps on server as dict.
     """
     data, resp = get('/maps')
     return data.get("maps", {})
+
 
 def upload_discovery(d: Discovery):
     """

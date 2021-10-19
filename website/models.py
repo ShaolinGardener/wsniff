@@ -35,12 +35,15 @@ class CaptureType:
     WARDRIVING = 2
     ONLINE_WARDRIVING = 3
 
+#TODO: refactor system - data like title/desc/... is stored redundantly 
+#an idea would be to see the whole system as a hierachie with Capture as the base class
+#-> choose another mapping option with multiple tables
 class Capture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(128), nullable=False)
     desc = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    filename = db.Column(db.String(20), nullable=False, unique=True)
+    filename = db.Column(db.String(20), nullable=True, unique=True)
     channel = db.Column(db.Integer, nullable=True)
     gps = db.Column(db.Boolean, nullable=False, default=True)
 

@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Make sure you put this AFTER Leaflet's CSS -->
+<script src="{{ url_for('static', filename='js/leaflet.min.js') }}"></script>   
+
+<h2>Map: {{ map.title }}</h2>
+{% if map.desc %}
+<p>{{ map.desc }}</p>
+{% endif %}
+
+
+<div id="mapid" style="height: 500px;"></div>
+
+<script type="text/javascript">    
+        //you could also directly assign it to {{ map.id }} (parseInt() is not necessary)
+        //but this way we avoid annoying error highlighting
+        let mapID = parseInt("{{ map.id }}");
+        let apiToken = "{{ api_token }}";
+
+
+        let map = L.map('mapid');
+
+        //Tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            'attribution':  'Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Mitwirkende',
+            'useCache': true,
+            'maxZoom': 19, //hoechstmoeglicher wert fuer openstreetmap.org
+            'zoomOffset':  0
+        }).addTo(map);
+
+        //icon for APs
+        let wifiIcon = L.icon({
+            iconUrl: '{{ url_for("static", filename="img/marker.png") }}',
+            iconSize: [26, 22],
+            iconAnchor: [13, 11],
+            popupAnchor: [0, 0]
+        });
+
+        //add all markers to this layer (makes it easy to find/delete all markers)
+        markerLayer = L.layerGroup();
+        markerLayer.addTo(map)
+
+        //whenever the map section changes, this function is called to 
+        //show the discoveries of this section
+        async function updateMap(e) {
+            //get boundaries of map section
+            let bounds = map.getBounds();
+            let bottom_left = bounds.getSouthWest()
+            let top_right = bounds.getNorthEast() 
+
+            //retrieve all discoveries that are within this map section
+            url = "http://localhost:4242/maps/" + mapID + "/aps?" + new URLSearchParams({
+                lat1: bottom_left.lat,
+                lon1: bottom_left.lng,
+                lat2: top_right.lat,
+                lon2: top_right.lng 
+            });
+            
+            //execute API call
+            let response = await fetch(url, {
+                headers: {
+                    'x-access-token': apiToken
+                }
+            });
+            let discoveries = (await response.json())["discoveries"]; 
+            console.log("[*] Loaded " + discoveries.length + " discoveries");
+
+            //remove the markers of discoveries which were within the old map section
+            markerLayer.clearLayers();
+
+            //display all discoveries in this map section
+            for(let i = 0; i < discoveries.length; i++) {
+                let discovery = discoveries[i];
+
+                let marker = L.marker([discovery["gps_lat"], discovery["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
+            }
+            
+        }
+       
+        //update map when it is first loaded
+        map.on("load", updateMap);
+        //update map whenever user zooms
+        map.on("zoomend", updateMap);
+        //update map whenever user moves around map
+        map.on("moveend", updateMap);
+        
+        //TODO: directly show area with discoveries on a higher zoom level
+        map.fitWorld()
+    
+</script>
+{% endblock content %}
+
+  

@@ -26,7 +26,7 @@
 {% if device_registered %}
 <div class="mt-3">
   <h2>Online Wardriving Maps</h2>
-    {% for map in maps %}
+    {% for map in online_maps %}
     <div class="card">
         <div class="card-header text-muted">
             Created: {{ map.get("date_created") }}
@@ -38,6 +38,25 @@
         <a href="{{ url_for('server_map_show', id=map.get('id')) }}" class="btn btn-info mb-1">Show map</a>
         <a href="{{ url_for('server_map_participate', id=map.get('id')) }}" class="btn btn-info mb-1">Participate</a>
         <a href="{{ url_for('server_map_delete', id=map.get('id')) }}" class="btn btn-danger mb-1">Delete</a>
+        </div>
+    </div>
+    {% endfor %}
+</div><!-- end of maps -->
+{% endif %}
+
+{% if local_maps %}
+<div class="mt-3">
+  <h2>Local Maps</h2>
+    {% for map in local_maps %}
+    <div class="card">
+        <div class="card-header text-muted">
+            Id: {{ map.id }}
+            Remote-Id: {{ map.server_map_id }}
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">{{ map.title }}</h5>
+          <p class="card-text">{{ map.desc }}</p>
+          <a href="{{ url_for('server_map_local_delete', id=map.id) }}" class="btn btn-danger mb-1">Delete local data</a>
         </div>
     </div>
     {% endfor %}

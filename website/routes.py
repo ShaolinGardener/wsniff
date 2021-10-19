@@ -620,8 +620,10 @@ def server_home():
     user = server.get('/users/me')
     device_registered = server.is_device_registered()
     is_admin = server.is_admin()
-    maps = api.get_all_maps()
-    return render_template("server_home.html", title="Server", user=user, device_registered=device_registered, admin=is_admin, maps=maps)
+    
+    online_maps = api.get_all_maps()
+    local_maps = Map.query.all()
+    return render_template("server_home.html", title="Server", user=user, device_registered=device_registered, admin=is_admin, online_maps=online_maps, local_maps=local_maps)
 
 @app.route("/server/connect-device", methods=["GET", "POST"])
 @login_required
@@ -663,14 +665,107 @@ def server_register_device():
 @app.route("/server/maps/<id>/show", methods=["GET"])
 @login_required
 def server_map_show(id):
-    pass
+    """
+    Show an online wardriving map
+    """
+    try:
+        map = api.get_map(id)
+        api_token = server.get_auth_token() 
+        return render_template("online_map.html", title="Show online map", map=map, api_token=api_token)
+    except Exception as e:
+        flash(str(e), "danger")
+        return redirect(url_for("home"))
+
+def server_map_capture(id):
+    """
+    Capture packets and add it to the existing map with ID <id>
+    Might raise an Exception in case anything goes wrong starting the capture.
+    """
+    map = Map.query.filter_by(id=id).first()
+    if not map:
+        raise Exception("Map does not exist")
+    
+    cap = Capture(title=map.title, desc=map.desc, user_id=current_user.id,
+                    gps=True, type=CaptureType.ONLINE_WARDRIVING)
+    try:
+        db.session.add(cap)
+        db.session.commit()
+    except Exception as e:
+        raise e
+
+    #create captureBehavior and start capture
+    id = cap.id
+    capture_behavior = OnlineMapBehavior(map)
+    
+    #actually start capture
+    try:
+        capture.start_capture(id, get_interfaces(Mode.MONITOR)[0], capture_behavior)
+        cap.state = CaptureState.RUNNING
+        db.session.commit()
+        flash(f"Capture started", "success")
+    except ValueError as e:
+        #capture state in DB is FAILED by default when created, so we don't need to set this here
+        flash(f"Capture already running.", "danger")
+    
+    return #attention: returns to a route function
 
 @app.route("/server/maps/<id>/participate", methods=["GET"])
 @login_required
 def server_map_participate(id):
-    pass
+    """
+    Contribute to a map which already exists.
+    """
+    if not monitor_interface_available():
+        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+        return redirect(url_for("settings"))
+    if not gps.is_gps_available():
+        flash("You have to enable GPS before you can do that.", "danger")
+        return redirect(url_for("settings"))
 
-@app.route("/server/maps/<id>", methods=["GET"])
+    #map already exists on server, so we just have to create a local instance
+    #with fitting infos: retrieve infos of online map and create local instance based on that
+    o_map = None
+    try: 
+        o_map = api.get_map(id)
+    except api.ApiException as e:
+        flash(str(e), "danger")
+        return redirect(url_for('server_home'))
+
+    #most important step here when creating a local instance is to store the correct server_map_id
+    map = Map(title=o_map["title"], desc=o_map["desc"], is_online=True, server_map_id=o_map["id"])
+    try: 
+        db.session.add(map)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        flash("Local map creation failed.", "danger")
+        return redirect(url_for('server_home')) 
+    
+    try:
+        #start capture in separate thread
+        server_map_capture(id)
+    except:
+        return redirect(url_for('server_home')) 
+    
+    return redirect(url_for('home'))
+
+
+
+
+
+@app.route("/maps/<int:id>/delete", methods=["GET"])
+@login_required
+def server_map_local_delete(id: int):
+    map = Map.query.filter_by(id=id).first_or_404()
+    try:
+        db.session.delete(map)
+        db.session.commit()
+        flash("Local data was deleted.", "success")
+    except Exception as e:
+        flash("Could not delete local map data.", "danger")
+    return redirect(url_for("server_home"))
+
+@app.route("/server/maps/<int:id>/delete", methods=["GET"])
 @login_required
 def server_map_delete(id):
     if api.delete_map(id):
