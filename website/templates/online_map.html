@@ -3,6 +3,7 @@
 {% block content %}
 <!-- Make sure you put this AFTER Leaflet's CSS -->
 <script src="{{ url_for('static', filename='js/leaflet.min.js') }}"></script>   
+<script src="{{ url_for('static', filename='js/leaflet-heat.min.js') }}"></script> 
 
 <h2>Map: {{ map.title }}</h2>
 {% if map.desc %}
@@ -26,7 +27,8 @@
             'attribution':  'Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Mitwirkende',
             'useCache': true,
             'maxZoom': 19, //hoechstmoeglicher wert fuer openstreetmap.org
-            'zoomOffset':  0
+            'zoomOffset':  0,
+            'noWrap': true
         }).addTo(map);
 
         //icon for APs
@@ -37,7 +39,25 @@
             popupAnchor: [0, 0]
         });
 
-        //add all markers to this layer (makes it easy to find/delete all markers)
+        //as soon as the map zoom is higher than this threshold, single markers
+        //for every discovery instead of a heatmap is shown
+        heat_map_zoom_threshold = 15;
+
+        //show discoveries as heat map
+        let heatLayer = L.heatLayer([[0, 0, 0.2]], {
+            //intensity of color of points increases with zoom and reaches its
+            //maximum on maxZoom 
+            maxZoom: heat_map_zoom_threshold, 
+            //radius of each "point" of the heatmap
+            radius: 25, //default is 25
+            //amount of blur
+            blur: 10, //default is 15
+            //the minimum opacity the heat will start at
+            minOpacity: 0.4 //default is 0.05
+        }).addTo(map);
+
+        //add all markers for single discoveries to this layer 
+        //(makes it easy to find/delete all markers)
         markerLayer = L.layerGroup();
         markerLayer.addTo(map)
 
@@ -68,13 +88,35 @@
 
             //remove the markers of discoveries which were within the old map section
             markerLayer.clearLayers();
+            heatLayer.setLatLngs([]);
 
-            //display all discoveries in this map section
-            for(let i = 0; i < discoveries.length; i++) {
-                let discovery = discoveries[i];
+            //now actually display discovery information of this map section
 
-                let marker = L.marker([discovery["gps_lat"], discovery["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
+            //show markers
+            if(map.getZoom() > heat_map_zoom_threshold) {
+                for(let i = 0; i < discoveries.length; i++) {
+                    let d = discoveries[i];
+                    //create marker for discovery
+                    let marker = L.marker([d["gps_lat"], d["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
+                    //add discovery information as popup to marker
+                    //TODO: add other Discovery infos (AND vendor information !!)
+                    let text = "<ul><li>BSSID:\t"+d["access_point_mac"]+"</li>" +
+                            "<li>Channel:\t<span class='badge badge-primary'>"+d["channel"]+"</span></li>" + 
+                            "<li>Signal Strength:\t<span class='badge badge-primary'>"+d["signal_strength"]+"</span></li>"
+                        "</ul>"
+                    marker.bindPopup("<b>"+d["ssid"]+"</b>" + text);
+                }
             }
+            //else show heatmap
+            else {
+                let coordinates = [];
+                for(let i = 0; i < discoveries.length; i++) {
+                    let discovery = discoveries[i];
+                    coordinates.push([discovery["gps_lat"], discovery["gps_lon"]]);
+                }
+                heatLayer.setLatLngs(coordinates);
+            }
+                    
             
         }
        
