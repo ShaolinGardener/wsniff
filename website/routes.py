@@ -4,7 +4,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm, ServerConnectionForm, ServerDeviceRegistrationForm
-from website.models import User, Capture, CaptureState, CaptureType, Map
+from website.models import User, Capture, CaptureState, CaptureType, Map, Discovery
 
 import website.capture.capture as capture
 from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior, OnlineMapBehavior
@@ -418,7 +418,19 @@ def _create_and_start_capture(capture_type: CaptureType, form):
     if capture_type == CaptureType.CAPTURE_ALL:
         capture_behavior = CaptureAllBehavior(channel, gps_tracking)
     elif capture_type == CaptureType.WARDRIVING:
-        capture_behavior = MapAccessPointsBehavior()
+        title = form.title.data
+        desc = form.desc.data
+        #create map DB entry
+        map = Map(title=title, desc=desc, is_online=False)
+        try: 
+            db.session.add(map)
+            db.session.commit()
+        except Exception as e:
+            print(e)
+            flash("Local map creation failed.", "danger")
+            return 
+
+        capture_behavior = MapAccessPointsBehavior(map)
     elif capture_type == CaptureType.ONLINE_WARDRIVING:
         title = form.title.data
         desc = form.desc.data
@@ -477,46 +489,53 @@ def capture_delete(id: int):
         flash(f"Capture does not exist.", "danger")
     return redirect(url_for("home")) 
 
-
-#WARDRIVE capture
-#read data from file
-def load_from_file(filepath):
+@app.route('/wardrive/<id>/aps', methods=['GET'])
+@login_required
+def get_map_discoveries(id):
     """
-    Load GPS data from file
+    Returns all discoveries that belong to this map that are within the rectangle defined by 
+    [lat1, lon1] and [lat2, lon2]
     """
-    f = open(filepath, "r")
-    data = list()
+    map = Map.query.filter_by(id=id).first_or_404()
 
-    line = f.readline()
-    while line:
-        t = line.strip().split(";")
-        ap = {
-            "bssid": t[1],
-            "ssid": t[2],
-            "channel": t[3],
-            "signal_strength": t[4],
-            "vendor": t[5],
-            "location": [t[6], t[7]]
-        }
-        data.append(ap)
-        line = f.readline()
-    f.close()
-    return json.dumps(data)
+    #get query parameters
+    lat1, lat2 = request.args.get('lat1'), request.args.get('lat2')
+    lon1, lon2 = request.args.get('lon1'), request.args.get('lon2')
+
+    if not (lat1 and lat2 and lon1 and lon2):
+        return jsonify({'message': 'Please provide lat and lon values'}), 400
+    else:
+        #parse arguments (query params are strings)
+        lat1, lat2 = float(lat1), float(lat2)
+        lon1, lon2 = float(lon1), float(lon2)
+
+    lat_min, lon_min = min(lat1, lat2), min(lon1, lon2)
+    lat_max, lon_max = max(lat1, lat2), max(lon1, lon2)
+
+    discoveries = Discovery.query.filter_by(map_id=map.id).filter( 
+        Discovery.gps_lat >= lat_min, Discovery.gps_lat <= lat_max, 
+        Discovery.gps_lon >= lon_min, Discovery.gps_lon <= lon_max).all()
+
+    #construct JSON output and return it
+    output = []
+    for discovery in discoveries:
+        output.append(discovery.get_as_dict())
+    return jsonify({'discoveries': output})
 
 @app.route("/wardrive/<int:id>")
 @login_required
 def wardrive_capture_show(id):
     """
-    Show a wardriving map
+    Show an local wardriving map
     """
     try:
-        capture = Capture.query.get(id)
-        filepath = os.path.join(app.root_path, "static", "captures", str(capture.id), "wardrive.txt")
-        aps_json = load_from_file(filepath)
-        return render_template("wardrive_map.html", title="Show Wardrive", capture=capture, aps_json=aps_json)
-    except ValueError as e:
+        map = Map.query.get(id)
+        if not map:
+            raise Exception("Map does not exist")
+        return render_template("local_map.html", title="Show local map", map=map)
+    except Exception as e:
         flash(str(e), "danger")
-        return redirect(url_for("home")) 
+        return redirect(url_for("home"))
 
 
 ##################################ACCESS POINT DETECTION##########################################

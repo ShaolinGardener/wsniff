@@ -44,7 +44,7 @@ _CONNECT_TIMEOUT = 3.1
 #Once your client has connected to the server and sent the HTTP request, 
 #the read timeout is the number of seconds the client will wait for the server
 #to send a response (till the first byte is sent)
-_READ_TIMEOUT = 7
+_READ_TIMEOUT = 14
 
 def get(endpoint: str, params:dict=None, headers:dict=None):
     """

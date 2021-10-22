@@ -19,8 +19,6 @@
     //you could also directly assign it to {{ map.id }} (parseInt() is not necessary)
     //but this way we avoid annoying error highlighting
     let mapID = parseInt("{{ map.id }}");
-    let apiToken = "{{ api_token }}";
-
 
     let map = L.map('mapid');
 
@@ -29,8 +27,7 @@
         'attribution':  'Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Mitwirkende',
         'useCache': true,
         'maxZoom': 19, //hoechstmoeglicher wert fuer openstreetmap.org
-        'zoomOffset':  0,
-        'noWrap': true
+        'zoomOffset':  0
     }).addTo(map);
 
     //icon for APs
@@ -61,7 +58,7 @@
     //add all markers for single discoveries to this layer 
     //(makes it easy to find/delete all markers)
     let markerLayer = L.layerGroup();
-    markerLayer.addTo(map);
+    markerLayer.addTo(map)
 
     //whenever the map section changes, this function is called to 
     //show the discoveries of this section
@@ -71,10 +68,8 @@
         let bottom_left = bounds.getSouthWest()
         let top_right = bounds.getNorthEast() 
 
-        console.log(bottom_left, top_right)
-
         //retrieve all discoveries that are within this map section
-        let url = "http://localhost:4242/maps/" + mapID + "/aps?" + new URLSearchParams({
+        let url = "{{ url_for('get_map_discoveries', id=map.id) }}?" + new URLSearchParams({
             lat1: bottom_left.lat,
             lon1: bottom_left.lng,
             lat2: top_right.lat,
@@ -82,12 +77,9 @@
         });
         
         //execute API call
-        let response = await fetch(url, {
-            headers: {
-                'x-access-token': apiToken
-            }
-        });
+        let response = await fetch(url);
         let discoveries = (await response.json())["discoveries"]; 
+        console.log("[*] Loaded " + discoveries.length + " discoveries");
 
         //remove the markers of discoveries which were within the old map section
         markerLayer.clearLayers();
@@ -98,16 +90,8 @@
         //show markers
         if(map.getZoom() > heat_map_zoom_threshold) {
             for(let i = 0; i < discoveries.length; i++) {
-                let d = discoveries[i];
-                //create marker for discovery
-                let marker = L.marker([d["gps_lat"], d["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
-                //add discovery information as popup to marker
-                //TODO: add other Discovery infos (AND vendor information !!)
-                let text = "<ul><li>BSSID:\t"+d["access_point_mac"]+"</li>" +
-                        "<li>Channel:\t<span class='badge badge-primary'>"+d["channel"]+"</span></li>" + 
-                        "<li>Signal Strength:\t<span class='badge badge-primary'>"+d["signal_strength"]+"</span></li>"
-                    "</ul>"
-                marker.bindPopup("<b>"+d["ssid"]+"</b>" + text);
+                let discovery = discoveries[i];
+                let marker = L.marker([discovery["gps_lat"], discovery["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
             }
         }
         //else show heatmap

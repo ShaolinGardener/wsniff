@@ -224,7 +224,7 @@ def _read_data():
                 if lat != 0.0 or lon != 0.0:
                     _gps_available = True
 
-                    print(f"lat:{lat} lon:{lon}")
+                    # print(f"lat:{lat} lon:{lon}")
                     _lock.acquire()
                     _current_position = lat, lon
                     _lock.release()

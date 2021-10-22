@@ -90,7 +90,7 @@ class Map(db.Model):
     is_online = db.Column(db.Boolean, nullable=False, default=False)
     #in order to add new discoveries to the right map ON THE SERVER, we have to store
     #correspondig map id of the map on the server
-    server_map_id = db.Column(db.Integer, nullable=False)
+    server_map_id = db.Column(db.Integer, nullable=True)
 
     #OnlineMaps have a server attribute (but can also be NULL for LocalMaps)
     server_id = db.Column(db.Integer, db.ForeignKey('server.id', ondelete='CASCADE'), nullable=True)
@@ -142,3 +142,20 @@ class Discovery(db.Model):
     #the map of which this discovery is a part 
     map_id = db.Column(db.Integer, db.ForeignKey('map.id'), nullable=False)
     map = db.relationship('Map', back_populates='discoveries')
+
+    def get_as_dict(self):
+        """
+        Returns this object as a dict since we need that for converting it to JSON
+        """
+        data = {
+            "id": self.id,
+            "mac": self.mac,
+            "channel": self.channel,
+            "encryption": self.encryption,
+            "signal_strength": self.signal_strength,
+            "ssid": self.ssid,
+            "timestamp": self.timestamp,
+            "gps_lat": self.gps_lat,
+            "gps_lon": self.gps_lon 
+        }
+        return data

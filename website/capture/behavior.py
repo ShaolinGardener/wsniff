@@ -127,26 +127,25 @@ class MapAccessPointsBehavior(CaptureBehavior):
     can be used to create a map of access points / wardriving
     """  
     
-    def __init__(self):
+    def __init__(self, map:Map):
         #bssid as unique identifier, AccessPoint object as value
         # bssid: str -> ap: AcessPoint
         self.aps = dict() #all APs that are uncovered 
         self._running = Event() #used to synchronize
         self.lock = Lock() 
 
+        self.map = map
+
         self.num_aps = 0
 
 
     def start_capture(self):
-        self.filepath = os.path.join(self.capture.dirpath, "wardrive.txt")
 
-        #hop through channels - hoppin thread
-        self._running.set()
-        interface = self.capture.interface.get_name()
-        hopping_thread = Thread(target=self.hopper, args=(interface, ), name="hopper")
-        self.hopping_thread = hopping_thread #we need a reference to stop thread later on
-        hopping_thread.daemon = True
-        hopping_thread.start()
+        #hop through channels - hopping thread
+        hopping_strategy = EvenlyDistributedHopping(delay=0.25)
+        available_interfaces = get_interfaces(Mode.MONITOR)
+        self.hopper = Hopper(hopping_strategy, available_interfaces, list(range(1, 14)))
+        self.hopper.start() 
 
         #cleaning thread
         cleaning_thread = Thread(target=self.clean, name="cleaner")
@@ -154,19 +153,28 @@ class MapAccessPointsBehavior(CaptureBehavior):
         cleaning_thread.daemon = True
         cleaning_thread.start()
 
-       
 
-    def hopper(self, iface):
-        channel = 1
-        stop_hopper = False
-        while self._running.is_set():
-            sleep(0.25)
-            os.system(f"sudo iwconfig {iface} channel {channel}")
-            #print(f"[*] current channel {channel}")
-            
-            dig = int(random.random() * 13) + 1
-            if dig != channel:
-                channel = dig
+    def add_discovery(self, ap):
+        """
+        Adds AP discovery to database
+        """
+        d = Discovery(mac=ap.bssid)
+        d.ssid=ap.ssid
+        d.channel=ap.channel
+        d.signal_strength=ap.signal_strength 
+        d.gps_lat=ap.lat
+        d.gps_lon=ap.lon
+        d.encryption = 1
+        d.map = self.map
+        #ap.t_last_seen
+
+        try:
+            db.session.add(d)
+            db.session.commit()
+            return d
+        except:
+            print("[-] Adding discovery to DB failed.")
+            return None
 
     def clean(self, t_remove=180, t_sleep=30):
         """
@@ -176,15 +184,13 @@ class MapAccessPointsBehavior(CaptureBehavior):
         while self._running.is_set():
             sleep(t_sleep)
             
-            with open(self.filepath, "a")  as f: #now add new information to file
-                #remove all dead access points
-                bssids = tuple(self.aps.keys())
-                for bssid in bssids:
-                    if not self.aps[bssid].isAlive(t_remove):
-                        ap = self.aps[bssid]
-                        line = f"{ap.t_last_seen};{ap.bssid};{ap.ssid};{ap.channel};{ap.signal_strength};{oui.lookup(ap.bssid)};{ap.lat};{ap.lon}\n" 
-                        f.write(line)
-                        del self.aps[bssid]
+            #remove all dead access points and add them to the database
+            bssids = tuple(self.aps.keys())
+            for bssid in bssids:
+                if not self.aps[bssid].isAlive(t_remove):
+                    ap = self.aps[bssid]
+                    self.add_discovery(ap)
+                    del self.aps[bssid]
 
 
     def handle_packet(self, frame): 
@@ -206,6 +212,9 @@ class MapAccessPointsBehavior(CaptureBehavior):
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
                 self.aps[bssid] = ap
+
+                #update channel stats of hopper
+                self.hopper.increment_ap_observations(channel)
             else: #acess point already in dict -> refresh AP to prevent it from getting deleted
                 #acess point already in dict -> refresh AP to prevent it from getting deleted
                 if not frame.haslayer(RadioTap): 
@@ -217,20 +226,17 @@ class MapAccessPointsBehavior(CaptureBehavior):
     def stop_capture(self):
         #stop thread
         self._running.clear()
-        self.hopping_thread.join()
+        self.hopper.stop_hopping()
         self.cleaning_thread.join()
 
-        #store in file   
-        f = open(self.filepath, "a") 
+        #store APs in DB if not done so before
         for bssid in self.aps:
-            #better to read here than f"-Syntax
             ap = self.aps[bssid]
-            line = f"{ap.t_last_seen};{ap.bssid};{ap.ssid};{ap.channel};{ap.signal_strength};{oui.lookup(ap.bssid)};{ap.lat};{ap.lon}\n" 
-            f.write(line)
-
-        f.close()
+            d = self.add_discovery(ap)
+        #clear dict
         self.aps.clear()
-        print("end bahavior")
+
+        print("[+] Finished wardriving activity.")
 
 
 class OnlineMapBehavior(CaptureBehavior):
