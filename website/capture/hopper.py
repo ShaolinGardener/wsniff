@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 import random
 import time
 from enum import Enum
@@ -20,6 +20,7 @@ class _ChannelStatistics():
         #should be a sorted list since that is expected by some strategies
         self.channels = sorted(channels)
         self.stats = dict()
+        self.lock = Lock()
 
     def num_channels(self):
         return len(self.channels)
@@ -36,8 +37,11 @@ class _ChannelStatistics():
     def increment_count(self, channel:int):
         """
         Should be called if a new AP was found on this channel
+        Is thread-safe. 
         """
+        self.lock.acquire()
         self.stats[channel] = self.stats.get(channel, 0) + 1
+        self.lock.release()
 
     def reset(self):
         """
@@ -258,6 +262,8 @@ class Hopper(Thread):
         """
         whenever a new AP is discovered, this method should be called to update the
         channel count of the corresponding channel
+
+        Is thread-safe.
 
         channel: the channel on which a new AP was found
         """

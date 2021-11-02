@@ -1,6 +1,8 @@
 import sys
 from enum import Enum
 import subprocess
+#using this instead of directly list[...] since there is only Python 3.7 on a RPi by default
+from typing import List
 
 
 class Mode(Enum):
@@ -18,7 +20,7 @@ class Interface:
 
         if mode == Mode.MONITOR:
             #assuming it follows this pattern of ending monitoring interfaces with 'mon'
-            self.name = name[:-3] 
+            self.name = name[:-3]
             self.mon_name = name
             self.current_name = name
         else:
@@ -28,7 +30,7 @@ class Interface:
 
         self.str_monitor_enable  = f"ifconfig {self.name} down; iw dev {self.name} interface add {self.mon_name} type monitor; ifconfig {self.mon_name} down; iw dev {self.mon_name} set type monitor; ifconfig {self.mon_name} up"
         self.str_monitor_disable = f"iw dev {self.mon_name} del; ifconfig {self.name} up"
-        
+
 
     def __str__(self):
         return f"{self.name}"
@@ -54,7 +56,7 @@ class Interface:
         Returns this interface to managed mode.
         raises subprocess.CalledProcessError error in case some error occurs
         """
-        
+
         subprocess.run(self.str_monitor_disable, shell=True, check=True)
         self.mode = Mode.MANAGED
         self.current_name = self.name
@@ -75,7 +77,7 @@ def _get_interface_names():
     """
     if sys.platform.startswith('linux'):
         #here infos about available network interfaces are stored (along their name)
-        f = open("/proc/net/dev", "r") 
+        f = open("/proc/net/dev", "r")
         #discard first two and last line + we only need the first column of the file
         return list(map(lambda line: line.split(":")[0].strip(), f.read().split("\n")[2:]))[:-1]
     else:
@@ -96,7 +98,7 @@ def monitor_interface_available():
     Returns if there is at least one interface in monitor mode connected to the raspberry.
     """
     #wireless interfaces
-    iw = _get_wireless_interface_names() 
+    iw = _get_wireless_interface_names()
     #get wireless interfaces in monitor mode
     mon_iw = list(filter(lambda iface: "mon" in iface, iw))
     return len(mon_iw) > 0
@@ -119,9 +121,9 @@ def update_interfaces():
     Returns: for convenience, directly return updated dict of interfaces
     """
     #wireless interfaces
-    iw = _get_wireless_interface_names() 
-    #this list represents all existing cards 
-    actual_cards = set(filter(lambda iface: "mon" not in iface, iw)) 
+    iw = _get_wireless_interface_names()
+    #this list represents all existing cards
+    actual_cards = set(filter(lambda iface: "mon" not in iface, iw))
     old_cards = set(interfaces.keys())
 
     #compute which interfaces were added and which ones were removed since the last update
@@ -143,7 +145,7 @@ def get_all_interfaces():
     """
     return update_interfaces()
 
-def get_interfaces(mode: Mode):
+def get_interfaces(mode: Mode) -> List[Interface]:
     """
     Returns a list of interface objects which are in the specified mode
     """

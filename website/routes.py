@@ -413,7 +413,7 @@ def _create_and_start_capture(capture_type: CaptureType, form):
     #create captureBehavior and start capture
     id = cap.id
     #there should be one since we have checked in new_capture
-    interface = get_interfaces(Mode.MONITOR)[0]
+    interfaces = get_interfaces(Mode.MONITOR)
 
     if capture_type == CaptureType.CAPTURE_ALL:
         capture_behavior = CaptureAllBehavior(channel, gps_tracking)
@@ -458,7 +458,7 @@ def _create_and_start_capture(capture_type: CaptureType, form):
     
     #actually start capture
     try:
-        capture.start_capture(id, interface, capture_behavior)
+        capture.start_capture(id, interfaces, capture_behavior)
         cap.state = CaptureState.RUNNING
         db.session.commit()
         flash(f"Capture {title} started", "success")
@@ -546,7 +546,7 @@ def detect_start():
     Start the detection of APs
     """
     try:
-        start_scan(get_interfaces(Mode.MONITOR)[0].get_name())
+        start_scan(get_interfaces(Mode.MONITOR))
         flash("Starting Access Point Scan", "success")
     except ValueError as e:
         flash(str(e), "danger")

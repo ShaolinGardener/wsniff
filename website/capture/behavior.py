@@ -36,6 +36,10 @@ class CaptureBehavior(ABC):
 
     @abstractmethod
     def handle_packet(self, frame):
+        """
+        Be aware that if using multiple interfaces, this method will be called concurrently.
+        So make sure it is implemented thread-safe in your concrete Behavior classes.
+        """
         pass
 
     #hook methods
@@ -71,9 +75,11 @@ class CaptureAllBehavior(CaptureBehavior):
     def __init__(self, channel, gps_tracking):
         self.channel = channel
         self.gps_tracking = gps_tracking
+        self.lock = Lock()
 
     def start_capture(self):
-        self.capture.interface.set_channel(self.channel)
+        for interface in self.capture.interfaces:
+            interface.set_channel(self.channel)
 
         self.pcap_filepath = os.path.join(self.capture.dirpath, "cap.pcap")
         self.packet_writer = PcapWriter(self.pcap_filepath,
@@ -92,8 +98,10 @@ class CaptureAllBehavior(CaptureBehavior):
             self.gps_route.stop_capture()
 
     def handle_packet(self, frame):
+        self.lock.acquire()
         self.packet_writer.write(frame)
         self.capture.num_packets += 1
+        self.lock.release()
         
 #BEGIN OF MapAccessPointsBehavior
 class _AccessPoint():
@@ -102,6 +110,8 @@ class _AccessPoint():
             self.ssid = ssid
             self.channel = channel
             self.signal_strength = 0
+
+            self.lock = Lock()
             #gps coordinates
             self.lat, self.lon = gps.get_gps_data()
 
@@ -113,10 +123,12 @@ class _AccessPoint():
         def refresh(self, signal_strength=0):
             #only store new gps coordinates if signal is stronger than last time
             if signal_strength > self.signal_strength:
+                self.lock.acquire()
                 self.t_last_seen = time.time()
                 self.signal_strength = signal_strength
                 #get new gps coordinates and update them
                 self.lat, self.lon = gps.get_gps_data()
+                self.lock.release()
 
         def __str__(self):
             return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
@@ -143,8 +155,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
 
         #hop through channels - hopping thread
         hopping_strategy = EvenlyDistributedHopping(delay=0.25)
-        available_interfaces = get_interfaces(Mode.MONITOR)
-        self.hopper = Hopper(hopping_strategy, available_interfaces, list(range(1, 14)))
+        self.hopper = Hopper(hopping_strategy, self.capture.interfaces, list(range(1, 14)))
         self.hopper.start() 
 
         #cleaning thread
@@ -194,7 +205,9 @@ class MapAccessPointsBehavior(CaptureBehavior):
 
 
     def handle_packet(self, frame): 
+        self.lock.acquire()
         self.capture.num_packets += 1
+        self.lock.release()
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
@@ -202,7 +215,6 @@ class MapAccessPointsBehavior(CaptureBehavior):
 
             #found new access point: add it to dict
             if bssid not in self.aps:
-                self.num_aps += 1
 
                 ssid = frame.getlayer(Dot11Elt).info.decode("utf-8")
                 channel = frame.getlayer(Dot11Elt).channel
@@ -211,10 +223,17 @@ class MapAccessPointsBehavior(CaptureBehavior):
                 if frame.haslayer(RadioTap):   
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
-                self.aps[bssid] = ap
-
-                #update channel stats of hopper
-                self.hopper.increment_ap_observations(channel)
+                #checking and adding ap to dict has to be an atomic action
+                #FIXME: we are doing a double check here to increase performance,
+                #however if the condition evaluates to False here, the else branch won't
+                #be executed
+                self.lock.acquire()
+                if bssid not in self.aps:
+                    self.aps[bssid] = ap
+                    self.num_aps += 1
+                    #update channel stats of hopper
+                    self.hopper.increment_ap_observations(channel)
+                self.lock.release()
             else: #acess point already in dict -> refresh AP to prevent it from getting deleted
                 #acess point already in dict -> refresh AP to prevent it from getting deleted
                 if not frame.haslayer(RadioTap): 
@@ -260,8 +279,7 @@ class OnlineMapBehavior(CaptureBehavior):
 
         #hop through channels - hopping thread
         hopping_strategy = EvenlyDistributedHopping(delay=0.25)
-        available_interfaces = get_interfaces(Mode.MONITOR)
-        self.hopper = Hopper(hopping_strategy, available_interfaces, list(range(1, 14)))
+        self.hopper = Hopper(hopping_strategy, self.capture.interfaces, list(range(1, 14)))
         self.hopper.start()
 
         #cleaning thread
@@ -311,7 +329,9 @@ class OnlineMapBehavior(CaptureBehavior):
 
 
     def handle_packet(self, frame): 
+        self.lock.acquire()
         self.capture.num_packets += 1
+        self.lock.release()
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
@@ -319,7 +339,6 @@ class OnlineMapBehavior(CaptureBehavior):
 
             #found new access point: add it to dict
             if bssid not in self.aps:
-                self.num_aps += 1
 
                 ssid = frame.getlayer(Dot11Elt).info.decode("utf-8")
                 channel = frame.getlayer(Dot11Elt).channel
@@ -328,10 +347,15 @@ class OnlineMapBehavior(CaptureBehavior):
                 if frame.haslayer(RadioTap):   
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
-                self.aps[bssid] = ap
-
-                #update channel stats of hopper
-                self.hopper.increment_ap_observations(channel)
+                #FIXME: if the check evaluates to False, the else branch wont be executed
+                #although it should
+                self.lock.acquire()
+                if bssid not in self.aps:
+                    self.aps[bssid] = ap
+                    self.num_aps += 1
+                    #update channel stats of hopper
+                    self.hopper.increment_ap_observations(channel)
+                self.lock.release() 
             else: #acess point already in dict -> refresh AP to prevent it from getting deleted
                 #acess point already in dict -> refresh AP to prevent it from getting deleted
                 if not frame.haslayer(RadioTap): 

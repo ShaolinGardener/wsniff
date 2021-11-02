@@ -40,7 +40,7 @@
 
     //as soon as the map zoom is higher than this threshold, single markers
     //for every discovery instead of a heatmap is shown
-    let heat_map_zoom_threshold = 15;
+    let heat_map_zoom_threshold = 17;
 
     //show discoveries as heat map
     let heatLayer = L.heatLayer([[0, 0, 0.2]], {
@@ -90,8 +90,13 @@
         //show markers
         if(map.getZoom() > heat_map_zoom_threshold) {
             for(let i = 0; i < discoveries.length; i++) {
-                let discovery = discoveries[i];
-                let marker = L.marker([discovery["gps_lat"], discovery["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
+                let d = discoveries[i];
+                let marker = L.marker([d["gps_lat"], d["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
+                let text = "<ul><li>BSSID:\t"+d["mac"]+"</li>" +
+                        "<li>Channel:\t<span class='badge badge-primary'>"+d["channel"]+"</span></li>" + 
+                        "<li>Signal Strength:\t<span class='badge badge-primary'>"+d["signal_strength"]+"</span></li>"
+                    "</ul>"
+                marker.bindPopup("<b>"+d["ssid"]+"</b>" + text);
             }
         }
         //else show heatmap

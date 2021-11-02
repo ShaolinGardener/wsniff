@@ -2,6 +2,8 @@ from threading import Thread, Event, Lock
 from time import sleep
 import time
 import random, os
+from typing import Dict, List
+
 import website.oui as oui
 from website.interfaces import Interface, Mode, get_interfaces
 from website.capture.hopper import Hopper, HoppingStrategy, EvenlyDistributedHopping
@@ -11,13 +13,15 @@ from scapy.all import *
 
 class AccessPoint():
 
-    def __init__(self, bssid, ssid, channel):
+    def __init__(self, bssid, ssid, channel, signal_strength=0):
         self.bssid = bssid
         self.ssid = ssid
         self.channel = channel
-        self.signal_strength = 0
+        self.signal_strength = signal_strength
 
         self.t_last_seen = time.time()
+
+        self.lock = Lock()
 
     def isAlive(self, t_death=20):
         return time.time() - self.t_last_seen < t_death
@@ -26,8 +30,9 @@ class AccessPoint():
         self.t_last_seen = time.time()
 
         if signal_strength != 0:
+            self.lock.acquire()
             self.signal_strength = signal_strength
-
+            self.lock.release()
 
     def __str__(self):
         return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
@@ -106,11 +111,11 @@ class Frame:
 lock = Lock()
 
 #hopper to hop channels
-hopper = None
+hopper: Hopper = None
 
 #bssid as unique identifier, AccessPoint object as value
 # bssid: str -> ap: AcessPoint
-aps = dict() #all APs that are uncovered
+aps: Dict[str, AccessPoint] = dict() #all APs that are uncovered
 
 # bssid: str -> # station-MACs: lsit ; e.g. {"bc:30:d9:33:30:ca" : ["e8:df:70:f8:32:80", "e4:df:70:f8:32:80"]}
 ap_station_mapper = dict() #assign stations to access points
@@ -141,30 +146,35 @@ def clean(t_remove, t_sleep=10):
 
 
 def handlePacket(pkt):
+    """
+    This function is called whenever a packet is sniffed.
+    Can be executed concurrently when using multiple interfaces/threads.
+    """
 
     if pkt.haslayer(Dot11Beacon):
         #bssid of AP is stored in second address field of header
         bssid = pkt.getlayer(Dot11).addr2
+        ssid = pkt.getlayer(Dot11Elt).info.decode("utf-8")
+        channel = pkt.getlayer(Dot11Elt).channel
+        signal_strength = 0
+        if pkt.haslayer(RadioTap):
+            signal_strength = pkt[RadioTap].dBm_AntSignal
 
         #found new access point: add it to dict
+        lock.acquire()
         if bssid not in aps:
-            ssid = pkt.getlayer(Dot11Elt).info.decode("utf-8")
-            channel = pkt.getlayer(Dot11Elt).channel
-            ap = AccessPoint(bssid, ssid, channel)
-
-            if pkt.haslayer(RadioTap):
-                ap.signal_strength = pkt[RadioTap].dBm_AntSignal
-
+            ap = AccessPoint(bssid, ssid, channel, signal_strength)
             aps[bssid] = ap
+            lock.release()
 
-            #update channel stats of hopper
+            #update channel stats of hopper (this is thread safe)
             hopper.increment_ap_observations(channel)
         else: #acess point already in dict -> refresh AP to prevent it from getting deleted
+            lock.release()
             #acess point already in dict -> refresh AP to prevent it from getting deleted
-            if not pkt.haslayer(RadioTap):
+            if not signal_strength:
                 aps[bssid].refresh()
             else:
-                signal_strength = pkt[RadioTap].dBm_AntSignal
                 aps[bssid].refresh(signal_strength)
 
         # #hidden networks
@@ -201,9 +211,10 @@ def handlePacket(pkt):
 
 
 
-def scan(iface):
+def scan(interface: Interface):
+    iface_name = interface.get_name()
     while _running.is_set():
-        sniff(iface=iface, prn=handlePacket, count=5, timeout=2)
+        sniff(iface=iface_name, prn=handlePacket, count=5, timeout=2)
     #because stop_scan can run through before while loop, access points can be added to aps after _running has been unset
     #therefore it is necessary to call clear exactly here
     aps.clear()
@@ -213,7 +224,7 @@ def scan(iface):
 def detection_is_running():
     return _running.is_set()
 
-def start_scan(interface:str, t_remove:int=23, t_clean=7):
+def start_scan(interfaces: List[Interface], t_remove:int=23, t_clean=7):
     """
     t_remove: if the access point has not been seen for this time, it is removed from the list of active access points
     t_clean: time span between two iterations of the cleaning thread
@@ -225,14 +236,14 @@ def start_scan(interface:str, t_remove:int=23, t_clean=7):
     _running.set()
 
     hopping_strategy = EvenlyDistributedHopping(delay=0.25)
-    available_interfaces = get_interfaces(Mode.MONITOR)
-    hopper = Hopper(hopping_strategy, available_interfaces, list(range(1, 14)))
+    hopper = Hopper(hopping_strategy, interfaces, list(range(1, 14)))
     hopper.start()
 
     #scan packets to find beacon frames
-    thread = Thread(target=scan, args=(interface,), name="scanner")
-    thread.daemon = True
-    thread.start()
+    for interface in interfaces:
+        thread = Thread(target=scan, args=(interface,), name="scanner")
+        thread.daemon = True
+        thread.start()
 
     #remove old AccessPoints
     thread = Thread(target=clean, args=(t_remove, t_clean), name="cleaner")

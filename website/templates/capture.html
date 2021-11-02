@@ -27,7 +27,7 @@
         let request = new XMLHttpRequest();
         request.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                capture = JSON.parse(this.responseText)
+                let capture = JSON.parse(this.responseText)
                 document.getElementById("num-packets").innerHTML = capture.num_packets;
             }
         };
