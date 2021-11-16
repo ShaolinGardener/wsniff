@@ -13,11 +13,12 @@ from scapy.all import *
 
 class AccessPoint():
 
-    def __init__(self, bssid, ssid, channel, signal_strength=0):
+    def __init__(self, bssid, ssid, channel, encryption=None, signal_strength=0):
         self.bssid = bssid
         self.ssid = ssid
         self.channel = channel
         self.signal_strength = signal_strength
+        self.encryption = encryption
 
         self.t_last_seen = time.time()
 
@@ -157,13 +158,15 @@ def handlePacket(pkt):
         ssid = pkt.getlayer(Dot11Elt).info.decode("utf-8")
         channel = pkt.getlayer(Dot11Elt).channel
         signal_strength = 0
+        stats = pkt[Dot11Beacon].network_stats()
+        encryption = stats.get("crypto").pop()
         if pkt.haslayer(RadioTap):
             signal_strength = pkt[RadioTap].dBm_AntSignal
 
         #found new access point: add it to dict
         lock.acquire()
         if bssid not in aps:
-            ap = AccessPoint(bssid, ssid, channel, signal_strength)
+            ap = AccessPoint(bssid, ssid, channel, encryption, signal_strength)
             aps[bssid] = ap
             lock.release()
 
@@ -263,7 +266,7 @@ def get_aps():
     #lock.acquire()
     copy = aps.copy()
     #lock.release()
-    res = [(ap.bssid, ap.ssid, ap.channel, ap.signal_strength, oui.lookup(ap.bssid)) for ap in copy.values()]
+    res = [(ap.bssid, ap.ssid, ap.channel, ap.signal_strength, ap.encryption, oui.lookup(ap.bssid)) for ap in copy.values()]
     res.sort(key=lambda ap: ap[3], reverse=True) #sort according to signal streng in desc order
     return res
 

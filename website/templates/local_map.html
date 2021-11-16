@@ -94,6 +94,7 @@
                 let marker = L.marker([d["gps_lat"], d["gps_lon"]], {opacity: 0.8, icon: wifiIcon}).addTo(markerLayer);
                 let text = "<ul><li>BSSID:\t"+d["mac"]+"</li>" +
                         "<li>Channel:\t<span class='badge badge-primary'>"+d["channel"]+"</span></li>" + 
+                        "<li>Encryption:\t"+d["encryption"]+"</span></li>" +
                         "<li>Signal Strength:\t<span class='badge badge-primary'>"+d["signal_strength"]+"</span></li>"
                     "</ul>"
                 marker.bindPopup("<b>"+d["ssid"]+"</b>" + text);

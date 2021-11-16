@@ -19,6 +19,7 @@
             <th scope="col">SSID</th>
             <th scope="col">CH</th>
             <th scope="col">Signal Strength</th>
+            <th scope="col">Enc</th>
             <th scope="col">Vendor</th>
           </tr>
         </thead>
@@ -59,7 +60,8 @@
               let ssid = aps[mac][1]
               let channel = aps[mac][2]
               let signal_strength = aps[mac][3]
-              let vendor = aps[mac][4]
+              let encryption = aps[mac][4]
+              let vendor = aps[mac][5]
               
               let tr = createNode('tr')
               let td_bssid = createNode('td')
@@ -74,6 +76,8 @@
               td_channel.innerHTML = channel
               let td_strength = createNode('td')
               td_strength.innerHTML = signal_strength
+              let td_encryption = createNode('td')
+              td_encryption.innerHTML = encryption
               let td_vendor = createNode('td')
               td_vendor.innerHTML = vendor
 
@@ -82,6 +86,7 @@
               append(tr, td_ssid);
               append(tr, td_channel);
               append(tr, td_strength);
+              append(tr, td_encryption);
               append(tr, td_vendor);
             }
           })

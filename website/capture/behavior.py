@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from threading import Thread, Event, Lock
 from time import sleep, time
+from datetime import datetime
 
 from website import app, db
 from website.models import Discovery, Map
@@ -105,10 +106,11 @@ class CaptureAllBehavior(CaptureBehavior):
         
 #BEGIN OF MapAccessPointsBehavior
 class _AccessPoint():
-        def __init__(self, bssid, ssid, channel):
+        def __init__(self, bssid, ssid, channel, encryption):
             self.bssid = bssid
             self.ssid = ssid
             self.channel = channel
+            self.encryption = encryption
             self.signal_strength = 0
 
             self.lock = Lock()
@@ -165,7 +167,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
         cleaning_thread.start()
 
 
-    def add_discovery(self, ap):
+    def add_discovery(self, ap: _AccessPoint):
         """
         Adds AP discovery to database
         """
@@ -175,9 +177,9 @@ class MapAccessPointsBehavior(CaptureBehavior):
         d.signal_strength=ap.signal_strength 
         d.gps_lat=ap.lat
         d.gps_lon=ap.lon
-        d.encryption = 1
+        d.encryption = ap.encryption
+        d.timestamp = datetime.fromtimestamp(ap.t_last_seen)
         d.map = self.map
-        #ap.t_last_seen
 
         try:
             db.session.add(d)
@@ -204,23 +206,25 @@ class MapAccessPointsBehavior(CaptureBehavior):
                     del self.aps[bssid]
 
 
-    def handle_packet(self, frame): 
+    def handle_packet(self, frame):
         self.lock.acquire()
         self.capture.num_packets += 1
         self.lock.release()
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
-            bssid = frame.getlayer(Dot11).addr2 
+            bssid = frame.getlayer(Dot11).addr2
 
             #found new access point: add it to dict
             if bssid not in self.aps:
 
                 ssid = frame.getlayer(Dot11Elt).info.decode("utf-8")
                 channel = frame.getlayer(Dot11Elt).channel
-                ap = _AccessPoint(bssid, ssid, channel)
+                stats = frame[Dot11Beacon].network_stats()
+                encryption = stats.get("crypto").pop()
+                ap = _AccessPoint(bssid, ssid, channel, encryption)
 
-                if frame.haslayer(RadioTap):   
+                if frame.haslayer(RadioTap):
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
                 #checking and adding ap to dict has to be an atomic action
@@ -288,7 +292,7 @@ class OnlineMapBehavior(CaptureBehavior):
         cleaning_thread.daemon = True
         cleaning_thread.start()
 
-    def add_discovery(self, ap):
+    def add_discovery(self, ap: _AccessPoint):
         """
         Adds AP discovery to database
         """
@@ -298,10 +302,10 @@ class OnlineMapBehavior(CaptureBehavior):
         d.signal_strength=ap.signal_strength 
         d.gps_lat=ap.lat
         d.gps_lon=ap.lon
-        d.encryption = 1
+        d.encryption = ap.encryption
+        d.timestamp = datetime.fromtimestamp(ap.t_last_seen)
         d.map = self.map
-        #ap.t_last_seen
-
+        
         try:
             db.session.add(d)
             db.session.commit()
@@ -328,23 +332,25 @@ class OnlineMapBehavior(CaptureBehavior):
                     del self.aps[bssid]
 
 
-    def handle_packet(self, frame): 
+    def handle_packet(self, frame):
         self.lock.acquire()
         self.capture.num_packets += 1
         self.lock.release()
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
-            bssid = frame.getlayer(Dot11).addr2 
+            bssid = frame.getlayer(Dot11).addr2
 
             #found new access point: add it to dict
             if bssid not in self.aps:
 
                 ssid = frame.getlayer(Dot11Elt).info.decode("utf-8")
                 channel = frame.getlayer(Dot11Elt).channel
-                ap = _AccessPoint(bssid, ssid, channel)
+                stats = frame[Dot11Beacon].network_stats()
+                encryption = stats.get("crypto").pop()
+                ap = _AccessPoint(bssid, ssid, channel, encryption)
 
-                if frame.haslayer(RadioTap):   
+                if frame.haslayer(RadioTap):
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
                 #FIXME: if the check evaluates to False, the else branch wont be executed

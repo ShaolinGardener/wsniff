@@ -100,11 +100,6 @@ class Map(db.Model):
         return f"Map('{self.id}', '{self.title}')"
 
 
-class Encryption():
-    OPEN = 0
-    WEP = 1
-    WPA = 2
-    WPA2 = 3
 
 #a single discovery of an access point
 class Discovery(db.Model):
@@ -122,7 +117,7 @@ class Discovery(db.Model):
     
     #don't place any constraints on the channel since the numbers can differ from country to country
     channel = db.Column(db.Integer, nullable=False)
-    encryption = db.Column(db.Integer, nullable=False)
+    encryption = db.Column(db.String(20), nullable=True)
     #this is the maximum RSSI the sniffer got during the timespan he saw the AP
     signal_strength = db.Column(db.Integer, nullable=False)
 
@@ -132,8 +127,7 @@ class Discovery(db.Model):
     #whether this discovery has been uploaded to server
     is_uploaded = db.Column(db.Boolean(), nullable=False, default=False)
     
-    #TODO
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, nullable=False)
     #gps data: latitude and longitude when the sniffer had the highest signal strength
     #(and was therefore closest to the AP)
     gps_lat = db.Column(db.Float, nullable=False)

@@ -105,6 +105,7 @@
                 //TODO: add other Discovery infos (AND vendor information !!)
                 let text = "<ul><li>BSSID:\t"+d["access_point_mac"]+"</li>" +
                         "<li>Channel:\t<span class='badge badge-primary'>"+d["channel"]+"</span></li>" + 
+                        "<li>Encryption:\t"+d["encryption"]+"</span></li>" +
                         "<li>Signal Strength:\t<span class='badge badge-primary'>"+d["signal_strength"]+"</span></li>"
                     "</ul>"
                 marker.bindPopup("<b>"+d["ssid"]+"</b>" + text);
