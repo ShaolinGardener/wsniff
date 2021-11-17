@@ -15,14 +15,38 @@ def load_user(user_id):
 
 #also extending UserMixin from flask_login allows passing a User object to login_user
 class User(db.Model, UserMixin):
+    """
+    Table which stores all the registered users.
+    Used for the login process as well as displaying only the data belonging to that user.
+    """
+    __tablename__ = 'users'
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(128), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
 
-    captures = db.relationship("Capture", backref="user", lazy=True)
+    captures = db.relationship("Capture", backref="user", lazy=True, cascade="all, delete")
 
     def __repr__(self):
         return f"User('{self.id}', '{self.username}')"
+
+
+class Server(db.Model):
+    """
+    Stores information which are used to connect to a wsniff server.
+    """
+    __tablename__ = 'servers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    #used to connect (a domain has a max length of 255 characters)
+    domain = db.Column(db.String(255), unique=True, nullable=False)
+    #the username this device uses on the server
+    device_name = db.Column(db.String(50), nullable=False)
+    #used to autheticate 
+    pass_token = db.Column(db.String(88), nullable=False)
+
+    maps = db.relationship('OnlineMap', back_populates='server', cascade="all, delete")
+
 
 class CaptureState:
     FAILED = 1
@@ -35,75 +59,106 @@ class CaptureType:
     WARDRIVING = 2
     ONLINE_WARDRIVING = 3
 
-#TODO: refactor system - data like title/desc/... is stored redundantly 
-#an idea would be to see the whole system as a hierachie with Capture as the base class
-#-> choose another mapping option with multiple tables
 class Capture(db.Model):
+    """
+    Base class for all activities that involve capturing and processing 802.11 data.
+    """
+    __tablename__ = 'captures'
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(128), nullable=False)
     desc = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    filename = db.Column(db.String(20), nullable=True, unique=True)
-    channel = db.Column(db.Integer, nullable=True)
-    gps = db.Column(db.Boolean, nullable=False, default=True)
-
-    type = db.Column(db.Integer, nullable=False)
+    
+    #CaptureStates
     state = db.Column(db.Integer, nullable=False, default=CaptureState.FAILED)
 
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+
+    #discrimatnor column which is used for indicating the type of object represented within this row
+    type = db.Column(db.String(50))
+    __mapper_args__ = {
+        'polymorphic_identity': 'captures',
+        'polymorphic_on': type
+    }
 
     def __repr__(self):
         return f"Capture('{self.id}', '{self.title}', '{self.date_created}')"
 
 
-class Server(db.Model):
-    __tablename__ = 'server'
+class FullCapture(Capture):
+    """
+    Capture the entire traffic on the specified channels and save it to a .pcap file.
+    """
+    __tablename__ = 'full_captures'
 
-    id = db.Column(db.Integer, primary_key=True)
-    #used to connect (a domain has a max length of 255 characters)
-    domain = db.Column(db.String(255), unique=True)
-    #the username this device uses on the server
-    device_name = db.Column(db.String(50))
-    #used to autheticate 
-    pass_token = db.Column(db.String(88))
+    id = db.Column(db.Integer, db.ForeignKey('captures.id', ondelete='CASCADE'), primary_key=True)
+    #since FullCapture is a subclass of Capture, we need to provide a value for the discrimnator attribute in Capture
+    __mapper_args__ = {
+        'polymorphic_identity': 'full_capture'
+    }
 
-    maps = db.relationship('Map', back_populates='server')
+    gps_tracking = db.Column(db.Boolean, nullable=False, default=False)
+    #TODO: allow multiple channels
+    channel = db.Column(db.Integer, nullable=False)
 
 
-
-class Map(db.Model):
+class Map(Capture):
+    """
+    A wardriving capture that creates a map.
+    This class entails both local maps and base informations of online maps.
+    """
     #you could also implement a inheritance hierarchie where
     #the entity types OnlineMap and LocalMap inherit from Map,
     #but due to small differences we have decided for a 1-table-solution
     #and using a dicriminator attribute (is_online)
-    __tablename__ = 'map'
+    __tablename__ = 'maps'
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(128), nullable=False)
-    desc = db.Column(db.Text, nullable=True)
-
+    id = db.Column(db.Integer, db.ForeignKey('captures.id', ondelete='CASCADE'), primary_key=True)
+    
+    #since Map is a subclass of Capture, we need to provide a value for the discrimnator attribute in Capture
+    __mapper_args__ = {
+        'polymorphic_identity': 'local_map'
+    }
+    
     #all discoveries that were made creating this map
-    discoveries = db.relationship('Discovery', back_populates='map')
+    discoveries = db.relationship('Discovery', back_populates='map', cascade="all, delete")
 
-    #The following attributes are only needed for OnlineMaps
-    #indicates whether this is a LocalMap or an OnlineMap
-    is_online = db.Column(db.Boolean, nullable=False, default=False)
+    def __repr__(self):
+        return f"Map('{self.id}', '{self.title}')"
+
+class OnlineMap(Map):
+    """
+    A subclass of Map. 
+    Single table inheritance that SQLAlchemy supports would be preferrable here, but
+    it is not possible since we would need a second type/discriminator attribute in the map table which is not supported.
+    SQLAlchemy doc: 'Currently, only one discriminator column may be set, typically on the base-most class in the hierarchy. '
+    """
+    __tablename__ = 'online_maps'
+
+    #since OnlineMap is a subclass of Map, we need to provide a value for the discrimnator attribute in Capture
+    __mapper_args__ = {
+        'polymorphic_identity': 'online_map'
+    }
+
+    id = db.Column(db.Integer, db.ForeignKey('maps.id', ondelete='CASCADE'), primary_key=True)
+
     #in order to add new discoveries to the right map ON THE SERVER, we have to store
     #correspondig map id of the map on the server
     server_map_id = db.Column(db.Integer, nullable=True)
 
     #OnlineMaps have a server attribute (but can also be NULL for LocalMaps)
-    server_id = db.Column(db.Integer, db.ForeignKey('server.id', ondelete='CASCADE'), nullable=True)
+    #TODO: server_id should have a NOT NULL constraint
+    server_id = db.Column(db.Integer, db.ForeignKey('servers.id', ondelete='CASCADE'), nullable=True)
     server = db.relationship('Server', back_populates='maps')
-
-    def __repr__(self):
-        return f"Map('{self.id}', '{self.title}')"
-
 
 
 #a single discovery of an access point
 class Discovery(db.Model):
-    __tablename__ = 'discovery'
+    """
+    A single observation of an access point. Belongs to a certain map.
+    """
+    __tablename__ = 'discoveries'
 
     #ideal would be a composite primary key with mac and id since it is possible that the
     #sniffer encounters the same access point multiple times, but SQLite does not allow
@@ -134,7 +189,7 @@ class Discovery(db.Model):
     gps_lon = db.Column(db.Float, nullable=False)
 
     #the map of which this discovery is a part 
-    map_id = db.Column(db.Integer, db.ForeignKey('map.id'), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey('maps.id', ondelete='CASCADE'), nullable=False)
     map = db.relationship('Map', back_populates='discoveries')
 
     def get_as_dict(self):

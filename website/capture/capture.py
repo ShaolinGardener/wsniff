@@ -1,11 +1,10 @@
 from threading import Thread, Event
-from time import sleep, time
+import os
 #using this instead of list[...] since there is only Python 3.7 on a RPi by default
 from typing import List
 
 from website import app
 from website.interfaces import Interface
-from website.gps import GPSRoute
 from website.capture.behavior import CaptureBehavior
 
 from scapy.all import *

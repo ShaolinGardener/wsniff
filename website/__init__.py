@@ -39,6 +39,12 @@ def setup():
         db.drop_all()
         db.create_all()
 
+    #in order for sqlite to pay attention to the foreign key constraint
+    #(and also things like ON DELETE CASCADE) you have to call 
+    #'PRAGMA foreign_keys = ON;' EVERY time you connect to your sqlite db
+    db.session.execute('PRAGMA foreign_keys = ON;')
+    db.session.commit()
+
     #start display
     display.startup()
 #call setup methode (needs to be done this way because of gunicorn)

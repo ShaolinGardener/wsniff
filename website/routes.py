@@ -4,7 +4,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm, ServerConnectionForm, ServerDeviceRegistrationForm
-from website.models import User, Capture, CaptureState, CaptureType, Map, Discovery
+from website.models import OnlineMap, User, Capture, CaptureState, CaptureType, FullCapture, Map, Discovery
 
 import website.capture.capture as capture
 from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior, OnlineMapBehavior
@@ -39,17 +39,24 @@ def home(path=""):
     running_ids = capture.get_running_ids()
     running_ids.sort()
     
+    #get running captures
     running_captures = [c for c in current_user.captures if c.id in running_ids]
     
-    old_captures_capture_all = [c for c in current_user.captures if c.id not in running_ids and c.type == CaptureType.CAPTURE_ALL]
-    old_captures_capture_all.sort(key= lambda cap: cap.date_created, reverse=True)
-    old_captures_wardriving = [c for c in current_user.captures if c.id not in running_ids and c.type == CaptureType.WARDRIVING]
-    old_captures_wardriving.sort(key= lambda cap: cap.date_created, reverse=True)
+    #old_captures_capture_all = [c for c in current_user.captures if c.id not in running_ids and c.type == CaptureType.CAPTURE_ALL]
+    #old_captures_capture_all.sort(key= lambda cap: cap.date_created, reverse=True)
+    #old_captures_wardriving = [c for c in current_user.captures if c.id not in running_ids and c.type == CaptureType.WARDRIVING]
+    #old_captures_wardriving.sort(key= lambda cap: cap.date_created, reverse=True)
 
-    #following code only made sense before user authetication was implemented
-    #running_captures = Capture.query.filter(Capture.id.in_(running_ids)).all()
-    #old_captures = Capture.query.filter(~Capture.id.in_(running_ids)).order_by(desc(Capture.date_created)).all()
-    #db.session.commit()
+    #get finished captures
+    old_captures_capture_all = FullCapture.query.filter(Capture.user_id == current_user.id) \
+                .filter(~Capture.id.in_(running_ids)) \
+                .order_by(desc(Capture.date_created)).all()
+
+    old_captures_wardriving = Map.query.filter(Capture.user_id == current_user.id) \
+                .filter(~Capture.id.in_(running_ids)) \
+                .order_by(desc(Capture.date_created)).all()
+    db.session.commit()
+
 
     interface_available = monitor_interface_available()
     return render_template("home.html", title="Home", interface_available=interface_available, running=running_captures, old_capture_all=old_captures_capture_all, old_wardriving=old_captures_wardriving)
@@ -319,19 +326,6 @@ def capture_download(id):
         flash(f"Folder for capture with id {id} not found", "danger")
     return redirect(url_for("home"))
 
-def gen_filename(title):
-    """
-    Generate unique filename
-    """
-    fn = ""
-    while True:
-        fn = secrets.token_hex(10) + ".cap"
-        #check wether a file with this name already exists
-        duplicate = Capture.query.filter_by(filename=fn).first()
-        if not duplicate:
-            break
-    return os.path.join(app.root_path, "static", "captures", fn)
-
 
 @app.route("/capture/new/select")
 @login_required
@@ -388,74 +382,66 @@ def _create_and_start_capture(capture_type: CaptureType, form):
     """
     Actually starts a new capture. Called by new_capture.
     """
-    #add to db
     title = form.title.data
-    filename = gen_filename(title)
-   
+    desc = form.desc.data
+    user_id = current_user.id
 
+    cap = None
+    capture_behavior = None
+
+    #depending on the capture type, init capture and capture_behavior 
+    #with different objects 
     if capture_type == CaptureType.CAPTURE_ALL:
         channel = form.channel.data
         gps_tracking = form.gpsTracking.data
-    else:
-        channel = None
-        gps_tracking = True
-    
-    #remove channel out of Capture model
-    cap = Capture(title=form.title.data, desc=form.desc.data, filename=filename, user_id=current_user.id,
-                    gps=gps_tracking, channel=channel, type=capture_type)
-    db.session.add(cap)
-    db.session.commit()
 
-    #add directory
-    path = os.path.join(app.root_path, "static", "captures", str(cap.id))
-    os.makedirs(path)
-
-    #create captureBehavior and start capture
-    id = cap.id
-    #there should be one since we have checked in new_capture
-    interfaces = get_interfaces(Mode.MONITOR)
-
-    if capture_type == CaptureType.CAPTURE_ALL:
         capture_behavior = CaptureAllBehavior(channel, gps_tracking)
+        cap = FullCapture(title=title, desc=desc, user_id=user_id, 
+                            gps_tracking=gps_tracking, channel=channel)
+        
     elif capture_type == CaptureType.WARDRIVING:
-        title = form.title.data
-        desc = form.desc.data
         #create map DB entry
-        map = Map(title=title, desc=desc, is_online=False)
-        try: 
-            db.session.add(map)
-            db.session.commit()
-        except Exception as e:
-            print(e)
-            flash("Local map creation failed.", "danger")
-            return 
+        cap = Map(title=title, desc=desc, user_id=user_id)
+        
+        capture_behavior = MapAccessPointsBehavior(cap)
 
-        capture_behavior = MapAccessPointsBehavior(map)
     elif capture_type == CaptureType.ONLINE_WARDRIVING:
-        title = form.title.data
-        desc = form.desc.data
         #try to create map online
         try:
             #create new map on server
             server_map_id = api.create_map(title, description=desc)
             #create local instance of map
-            map = Map(title=title, desc=desc, is_online=True, server_map_id=server_map_id)
-            try: 
-                db.session.add(map)
-                db.session.commit()
-            except:
-                flash("Local map creation failed.", "danger")
-                return 
+            #TODO: here we should also pass a server_id 
+            cap = OnlineMap(title=title, desc=desc, user_id=user_id, 
+                            server_map_id=server_map_id)
         except:
             flash("Online map creation failed.", "danger")
             return 
         
         #if the map creation on both the server and the local machine worked, 
         #create capture behavior
-        capture_behavior = OnlineMapBehavior(map)
+        capture_behavior = OnlineMapBehavior(cap)
     else:
         raise Exception("[-] This should not be possible.")
+
+
+    #add capture object to database
+    #remove channel out of Capture model
+    try: 
+        db.session.add(cap)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        flash("Capture creation failed.", "danger")
+        return 
     
+
+    #create captureBehavior and start capture with an ID that belongs 
+    #to that capture in the database
+    id = cap.id
+    #there should be one since we have checked in new_capture
+    interfaces = get_interfaces(Mode.MONITOR)
+
     #actually start capture
     try:
         capture.start_capture(id, interfaces, capture_behavior)
@@ -477,14 +463,28 @@ def capture_delete(id: int):
     """
     c = Capture.query.get(id)
     if c:
-        path = os.path.join(app.root_path, "static", "captures", str(c.id))
+        capture_type = "Capture"
+
+        #do cleanup depending on type of capture
+        if isinstance(c, FullCapture):
+            #delete saved files
+            path = os.path.join(app.root_path, "static", "captures", str(c.id))
+            try:
+                if os.path.exists(path):
+                    shutil.rmtree(path)
+            except OSError as e:
+                flash(f"Could not delete directory {path}")
+        elif isinstance(c, Map):
+            capture_type = "Map"
+
+        #delete it from the database
         try:
-            shutil.rmtree(path)
             db.session.delete(c)
             db.session.commit()
-            flash(f"Capture {c.title} was successfully deleted.", "success")
-        except OSError as e:
-            print(f"Could not delete directory {path}")
+            flash(f"{capture_type} '{c.title}' was successfully deleted.", "success")
+        except Exception as e:
+            print(e)
+            flash(f"Error when trying to delete capture from database.")
     else:
         flash(f"Capture does not exist.", "danger")
     return redirect(url_for("home")) 
@@ -641,7 +641,7 @@ def server_home():
     is_admin = server.is_admin()
     
     online_maps = api.get_all_maps()
-    local_maps = Map.query.all()
+    local_maps = OnlineMap.query.all()
     return render_template("server_home.html", title="Server", user=user, device_registered=device_registered, admin=is_admin, online_maps=online_maps, local_maps=local_maps)
 
 @app.route("/server/connect-device", methods=["GET", "POST"])
@@ -695,6 +695,7 @@ def server_map_show(id):
         flash(str(e), "danger")
         return redirect(url_for("home"))
 
+
 def server_map_capture(id):
     """
     Capture packets and add it to the existing map with ID <id>
@@ -703,23 +704,15 @@ def server_map_capture(id):
     map = Map.query.filter_by(id=id).first()
     if not map:
         raise Exception("Map does not exist")
-    
-    cap = Capture(title=map.title, desc=map.desc, user_id=current_user.id,
-                    gps=True, type=CaptureType.ONLINE_WARDRIVING)
-    try:
-        db.session.add(cap)
-        db.session.commit()
-    except Exception as e:
-        raise e
 
     #create captureBehavior and start capture
-    id = cap.id
+    id = map.id
     capture_behavior = OnlineMapBehavior(map)
     
     #actually start capture
     try:
         capture.start_capture(id, get_interfaces(Mode.MONITOR)[0], capture_behavior)
-        cap.state = CaptureState.RUNNING
+        map.state = CaptureState.RUNNING
         db.session.commit()
         flash(f"Capture started", "success")
     except ValueError as e:
@@ -751,7 +744,9 @@ def server_map_participate(id):
         return redirect(url_for('server_home'))
 
     #most important step here when creating a local instance is to store the correct server_map_id
-    map = Map(title=o_map["title"], desc=o_map["desc"], is_online=True, server_map_id=o_map["id"])
+    #TODO: pass server_id
+    map = OnlineMap(title=o_map["title"], desc=o_map["desc"], user_id=current_user.id,
+                    server_map_id=o_map["id"])
     try: 
         db.session.add(map)
         db.session.commit()
@@ -769,13 +764,10 @@ def server_map_participate(id):
     return redirect(url_for('home'))
 
 
-
-
-
 @app.route("/maps/<int:id>/delete", methods=["GET"])
 @login_required
 def server_map_local_delete(id: int):
-    map = Map.query.filter_by(id=id).first_or_404()
+    map = OnlineMap.query.filter_by(id=id).first_or_404()
     try:
         db.session.delete(map)
         db.session.commit()

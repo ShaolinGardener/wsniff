@@ -14,7 +14,7 @@ from website.api import upload_discovery
 
 import display.display as display
 
-import os, random
+import os
 
 from scapy.all import *
 
@@ -79,13 +79,18 @@ class CaptureAllBehavior(CaptureBehavior):
         self.lock = Lock()
 
     def start_capture(self):
+        #set all interfaces to the specified channel
         for interface in self.capture.interfaces:
             interface.set_channel(self.channel)
+
+        #create directory
+        os.makedirs(self.capture.dirpath)
 
         self.pcap_filepath = os.path.join(self.capture.dirpath, "cap.pcap")
         self.packet_writer = PcapWriter(self.pcap_filepath,
                                         append=True, sync=True)
 
+        #gps
         if self.gps_tracking: #TODO: name of route using db to query for capture title maybe?
             path = os.path.join(self.capture.dirpath, "gps.txt")
             self.gps_route = gps.GPSRoute(str(id), path)
