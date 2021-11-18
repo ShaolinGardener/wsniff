@@ -211,7 +211,7 @@ class Discovery(db.Model):
             "encryption": self.encryption,
             "signal_strength": self.signal_strength,
             "ssid": self.ssid,
-            "timestamp": self.timestamp,
+            "timestamp": datetime.timestamp(self.timestamp),
             "gps_lat": self.gps_lat,
             "gps_lon": self.gps_lon 
         }

@@ -328,6 +328,20 @@ def capture_download(id):
         except Exception as e:
             flash(f"Error when zipping: {e}", "danger")
 
+    elif isinstance(c, Map):
+        #TODO: this also includes OnlineMaps (but only the local discoveries)
+        discoveries = c.discoveries
+        out_dirpath = os.path.join(app.root_path, "static", "tmp")
+        out_filepath = os.path.join(app.root_path, "static", "tmp", c.title)
+        file = open(out_filepath, "w")
+        file.write("{discoveries: [\n")
+        for d in discoveries:
+            out = json.dumps(d.get_as_dict())
+            file.write(f"{out},\n")
+        file.write("]}")
+        file.close()
+        return send_from_directory(directory=out_dirpath, filename=c.title, as_attachment=True, attachment_filename=c.title.replace(" ", "_"))
+
     return redirect(url_for("home"))
 
 

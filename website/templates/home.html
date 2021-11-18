@@ -90,6 +90,7 @@
                   <h5 class="card-title">{{ capture.title }}</h5>
                   <p class="card-text">{{ capture.desc }}</p>
                   <a href="{{ url_for('wardrive_capture_show', id=capture.id) }}" class="btn btn-info mb-1">Show Result</a>
+                  <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info mb-1">Download</a>
                   <a href="{{ url_for('capture_delete', id=capture.id) }}" class="btn btn-danger mb-1">Delete capture</a>
                   </div>
               </div>
