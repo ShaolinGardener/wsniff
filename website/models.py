@@ -3,8 +3,8 @@ from enum import unique
 from flask import current_app
 
 from flask_login import UserMixin
-from website import db, login_manager
-
+from website import db, login_manager, app
+import os
 
 #USER RELATED
 
@@ -98,9 +98,17 @@ class FullCapture(Capture):
         'polymorphic_identity': 'full_capture'
     }
 
+    #the name of the directory that contains all files that belong to that full capture
+    #for instance, the .pcap files 
+    dir_name = db.Column(db.String(120), nullable=False)
+
+    #whether gps information is recorded
     gps_tracking = db.Column(db.Boolean, nullable=False, default=False)
     #TODO: allow multiple channels
     channel = db.Column(db.Integer, nullable=False)
+
+    def get_dir_path(self):
+        return os.path.join(app.root_path, "static", "captures", self.dir_name)
 
 
 class Map(Capture):

@@ -305,8 +305,13 @@ def capture_download(id):
     Transfer capture data to terminal device (e.g. laptop) by zipping the corresponding data
     """
     c = Capture.query.get(id)
-    if c:
-        dir_path = os.path.join(app.root_path, "static", "captures", str(c.id))
+    if not c:
+        flash(f"Capture with id '{id}' does not exist.", "success")
+        return redirect(url_for("home"))
+
+    #if it is a full capture
+    if isinstance(c, FullCapture):    
+        dir_path = c.get_dir_path()
         
         out_dirpath = os.path.join(app.root_path, "static", "tmp")
         out_filepath = os.path.join(out_dirpath, str(c.id))
@@ -322,8 +327,7 @@ def capture_download(id):
             return send_from_directory(out_dirpath, str(c.id) + ".zip", as_attachment=True, attachment_filename=download_filename)
         except Exception as e:
             flash(f"Error when zipping: {e}", "danger")
-    else:
-        flash(f"Folder for capture with id {id} not found", "danger")
+
     return redirect(url_for("home"))
 
 
@@ -377,6 +381,21 @@ def new_capture():
 
     return render_template("add_capture.html", title="Add Capture", capture_type=capture_type, form=form, gps_available=gps_available)
 
+def _get_unique_dir_path(title: str):
+    """
+    Returns a unique directory path so that no 2 captures will have the same path.
+    """
+    while True:
+        postfix = secrets.token_hex(8)
+        dir_name = f"{title}_{postfix}"
+
+        #if there already is a full capture with that dir_name, try a new one, 
+        #else we are finished 
+        c = FullCapture.query.filter_by(dir_name=dir_name).first()
+        if c:
+            continue
+        else:
+            return dir_name
 
 def _create_and_start_capture(capture_type: CaptureType, form):
     """
@@ -394,10 +413,11 @@ def _create_and_start_capture(capture_type: CaptureType, form):
     if capture_type == CaptureType.CAPTURE_ALL:
         channel = form.channel.data
         gps_tracking = form.gpsTracking.data
+        dir_name = _get_unique_dir_path(title)
 
-        capture_behavior = CaptureAllBehavior(channel, gps_tracking)
         cap = FullCapture(title=title, desc=desc, user_id=user_id, 
-                            gps_tracking=gps_tracking, channel=channel)
+                            gps_tracking=gps_tracking, channel=channel, dir_name=dir_name)
+        capture_behavior = CaptureAllBehavior(cap)
         
     elif capture_type == CaptureType.WARDRIVING:
         #create map DB entry
@@ -462,31 +482,33 @@ def capture_delete(id: int):
     Delete a capture including its DB entries and files.
     """
     c = Capture.query.get(id)
-    if c:
-        capture_type = "Capture"
-
-        #do cleanup depending on type of capture
-        if isinstance(c, FullCapture):
-            #delete saved files
-            path = os.path.join(app.root_path, "static", "captures", str(c.id))
-            try:
-                if os.path.exists(path):
-                    shutil.rmtree(path)
-            except OSError as e:
-                flash(f"Could not delete directory {path}")
-        elif isinstance(c, Map):
-            capture_type = "Map"
-
-        #delete it from the database
-        try:
-            db.session.delete(c)
-            db.session.commit()
-            flash(f"{capture_type} '{c.title}' was successfully deleted.", "success")
-        except Exception as e:
-            print(e)
-            flash(f"Error when trying to delete capture from database.")
-    else:
+    if not c:
         flash(f"Capture does not exist.", "danger")
+        return redirect(url_for("home")) 
+    
+    capture_type = "Capture"
+
+    #do cleanup depending on type of capture
+    if isinstance(c, FullCapture):
+        #delete saved files
+        path = c.get_dir_path()
+        try:
+            if os.path.exists(path):
+                shutil.rmtree(path)
+        except OSError as e:
+            flash(f"Could not delete directory {path}")
+    elif isinstance(c, Map):
+        capture_type = "Map"
+
+    #delete it from the database
+    try:
+        db.session.delete(c)
+        db.session.commit()
+        flash(f"{capture_type} '{c.title}' was successfully deleted.", "success")
+    except Exception as e:
+        print(e)
+        flash(f"Error when trying to delete capture from database.")
+
     return redirect(url_for("home")) 
 
 @app.route('/wardrive/<id>/aps', methods=['GET'])

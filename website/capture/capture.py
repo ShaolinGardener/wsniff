@@ -25,8 +25,6 @@ class Capture:
         self.capture_behavior = capture_behavior
         capture_behavior.init(self) #important: capture behavior needs a reference to its capture
 
-        self.dirpath = os.path.join(app.root_path, "static", "captures", str(id))
-        print(self.dirpath)
         self.num_packets = 0
         self._stop = Event()
 

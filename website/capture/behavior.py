@@ -4,7 +4,7 @@ from time import sleep, time
 from datetime import datetime
 
 from website import app, db
-from website.models import Discovery, Map
+from website.models import Discovery, FullCapture, Map
 from website.interfaces import Interface
 import website.gps as gps
 import website.oui as oui
@@ -73,9 +73,14 @@ class CaptureAllBehavior(CaptureBehavior):
     write all frames into a .pcap
     """
 
-    def __init__(self, channel, gps_tracking):
-        self.channel = channel
-        self.gps_tracking = gps_tracking
+    def __init__(self, cap: FullCapture):
+        """
+        cap: the database object representing this capture
+            Stores all the information needed for this capture behavior
+        """
+        self.channel = cap.channel
+        self.gps_tracking = cap.gps_tracking
+        self.dir_path = cap.get_dir_path()
         self.lock = Lock()
 
     def start_capture(self):
@@ -83,16 +88,16 @@ class CaptureAllBehavior(CaptureBehavior):
         for interface in self.capture.interfaces:
             interface.set_channel(self.channel)
 
-        #create directory
-        os.makedirs(self.capture.dirpath)
+        #create directory for files that belong to this capture
+        os.makedirs(self.dir_path)
 
-        self.pcap_filepath = os.path.join(self.capture.dirpath, "cap.pcap")
+        self.pcap_filepath = os.path.join(self.dir_path, "cap.pcap")
         self.packet_writer = PcapWriter(self.pcap_filepath,
                                         append=True, sync=True)
 
         #gps
         if self.gps_tracking: #TODO: name of route using db to query for capture title maybe?
-            path = os.path.join(self.capture.dirpath, "gps.txt")
+            path = os.path.join(self.dir_path, "gps.txt")
             self.gps_route = gps.GPSRoute(str(id), path)
 
         #do this in the end (that's why we use an additional if-clause since there could be isnerted new code above later on)
