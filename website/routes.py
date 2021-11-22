@@ -57,10 +57,13 @@ def home(path=""):
                 .order_by(desc(Capture.date_created)).all()
     db.session.commit()
 
-
     interface_available = monitor_interface_available()
     return render_template("home.html", title="Home", interface_available=interface_available, running=running_captures, old_capture_all=old_captures_capture_all, old_wardriving=old_captures_wardriving)
 
+@app.route('/capture/delete_modal/<int:id>')
+@login_required
+def show_delete_modal(id: int):
+    return render_template("delete_capture.html", title="Delete Capture", id=id)
 
 #############################################USER RELATED#########################################
 
