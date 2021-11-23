@@ -16,9 +16,11 @@ import website.oui as oui
 from website.settings import WPA_SUPPLICANT_BACKUP_PATH
 import website.server as server
 import website.api as api
+import website.network as network
 
 import display.display as display
 
+import requests
 from sqlalchemy import desc
 import secrets
 import random
@@ -823,6 +825,73 @@ def server_map_delete(id):
     else:
         flash("Map could not be deleted", "danger")
     return redirect(url_for("server_home"))
+
+@app.route('/oui/<mac>', methods=["GET"])
+#TODO: authetication
+def lookup_oui(mac:str):
+    """
+    Returns the vendor information for this mac address
+    """
+    return jsonify({'vendor': oui.lookup(mac)})
+
+@app.route('/devices/<ip>/oui/<mac>', methods=["GET"])
+@login_required
+def remote_lookup_oui(ip:str, mac:str):
+    """
+    Returns the vendor information for this mac address
+    """
+    resp = requests.get(f"http://{ip}:4242/oui/{mac}")
+    print(resp.text)
+    if resp.status_code == 200:
+        return jsonify({'reply': resp.json()})
+
+########################################wsniff devices###########################################
+@app.route("/devices/connected")
+@login_required
+def get_connected_devices():
+    """
+    Look for other wsniff devices that are trying to connect.
+    """
+    connected = network.get_master().get_connected_devices()
+    return jsonify({'connected_devices': connected})
+
+@app.route("/devices/search")
+@login_required
+def start_network_discovery():
+    """
+    Start network discovery thread.
+    """
+    try:
+        network.get_master().start_discovery()
+        flash("Started network discovery.", "success")
+    except Exception as e:
+        flash(str(e), "danger")
+    return redirect(url_for('show_network_discovery'))
+
+@app.route("/devices/end_search")
+@login_required
+def stop_network_discovery():
+    """
+    Stop network discovery thread.
+    """
+    try:
+        network.get_master().end_discovery()
+        flash("Stopped network discovery.", "success")
+    except Exception as e:
+        flash(str(e), "danger")
+    return redirect(url_for('show_network_discovery'))
+
+@app.route("/devices")
+@login_required
+def show_network_discovery():
+    """
+    Display all connected devices and allow user to start and stop a pairing process.
+    """
+    is_running = network.get_master().is_discovery_running()
+    return render_template("network_discovery.html", title="Connect", is_running=is_running) 
+
+
+#################################################################################################
 
 @app.route("/settings/wifi-external", methods=["GET", "POST"])
 @login_required

@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h1>Detect other devices</h1>
+    <p>Connect with other wsniff devices to further enhance you capture capabilities..</p>
+
+    <div class="text-center mt-4 mb-4">
+      {% if is_running %}
+      <a class="btn btn-danger btn-lg" href="{{url_for('stop_network_discovery')}}">Stop discovery</a>
+      {% else %}
+        <a class="btn btn-success btn-lg" href="{{url_for('start_network_discovery')}}">Look for other devices</a>
+      {% endif %}
+    </div>
+    
+    <h2>Connected devices</h2>
+    <ul id="connected-devices">
+      It seems no device is connected.
+    </ul>
+
+    <script>
+      "use strict";
+
+      async function refresh() {
+        const device_list = document.getElementById("connected-devices");
+
+        let response = await fetch("{{ url_for('get_connected_devices') }}");
+        let devices = (await response.json()).connected_devices
+
+        if(devices.length == 0) {
+
+        } else {
+          //first remove old content
+          device_list.innerHTML = "";
+          //then add devices to list
+          let d = undefined;
+          for(let device of devices) {
+            d = document.createElement("li");
+            d.innerHTML = device;
+            device_list.appendChild(d);
+          }
+        }
+        
+
+      }
+      
+      refresh()
+      document.addEventListener("DOMContentLoaded", function() {
+        setInterval(refresh, 1000) //setInterval could be replaced 
+      });
+    </script>
+{% endblock content %}
