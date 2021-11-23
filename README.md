@@ -11,6 +11,12 @@
 A WiFi sniffer you can use with your Raspberry Pi and simply control over your smartphone - discover 802.11 networks, capture their traffic or create interactive wardriving maps. The all-in-one solution with a comfortable
  graphical user interface. 🌱
  
+<p align="center">
+  <img alt="device" src="https://user-images.githubusercontent.com/25824942/143064191-9ce161b1-94ff-46d1-9690-c572ea63b9ea.jpg" />
+  <img alt="wsniff" src="https://user-images.githubusercontent.com/25824942/143064507-d20c7862-a532-45cf-aa40-a35823b8a677.png" />
+  <p align="center">Example for a sniffer running wsniff and a map it created.</p>
+</p>
+ 
 ## Table of Contents
 - [Requirements](#-requirements)
 - [Setup](#setup)
