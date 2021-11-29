@@ -1,9 +1,9 @@
 """SET TO SLAVE IF THIS DEVICE SHOULD BE PART OF A CLUSTER"""
-ROLE="SLAVE"
+ROLE="MASTER"
 
 """ CONFIGURE ACCESS TO YOUR GPS MODULE HERE"""
 #NEO 8M: /dev/serial0, SkyTraq Venus 8: /dev/ttyUSB0
-GPS_SERIAL = "/dev/serial0" 
+GPS_SERIAL = "/dev/serial0"
 
 #the baud rate is the symbol rate, i.e. the number of transferred symbols per second
 #you will find it in the information sheet of your gps module, the unit will be 'Bd'

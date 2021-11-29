@@ -80,7 +80,7 @@ python3 startup.py
 After you have executed that command, you can use the browser of the device you have connected to the Pi in the previous step and type in the Pi's IP-address.
 Now the web interface of wsniff should appear where you should create a new account first.
 If you have used the setupAccessPoint.py script from above to set up the Raspberry as a wireless access point, you can also browse to 'wsniff.com' after connecting to the 'wsniff' WiFi network.
-![image](https://user-images.githubusercontent.com/25824942/129654364-5bd494c1-0d1a-49d3-96d1-8eb76f97cc8d.png)
+![image](https://user-images.githubusercontent.com/25824942/144037714-901a1ff5-3852-410d-ab84-94fe5543a447.png)
 
 
 ## 🖋 Adapt wsniff

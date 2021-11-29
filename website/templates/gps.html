@@ -53,14 +53,14 @@
         'zoomOffset':  0
     }).addTo(mymap);
 
-    let mewIcon = L.icon({
-        iconUrl: '{{ url_for("static", filename="img/mew.png") }}',
+    let positionIcon = L.icon({
+        iconUrl: '{{ url_for("static", filename="img/logo.svg") }}',
         iconSize: [50, 50],
         iconAnchor: [25, 25],
         popupAnchor: [20, 20]
     });
 
-    let currentPos = L.marker([lat, lon], {opacity: 0.9, icon: mewIcon}).addTo(mymap)
+    let currentPos = L.marker([lat, lon], {opacity: 0.9, icon: positionIcon}).addTo(mymap)
 
 </script>
 {% endblock content %}
