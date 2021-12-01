@@ -24,6 +24,7 @@ import requests
 from sqlalchemy import desc
 import secrets
 import random
+import socket
 import os, shutil
 import json
 from scapy.all import *
@@ -125,7 +126,20 @@ def logout():
 
     flash("You are now logged out!", category="success")
     return redirect(url_for("login"))
-    
+
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # standard address of gateway of most routers
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        ip_address = s.getsockname()[0]
+    except Exception:
+        ip_address = '127.0.0.1'
+    finally:
+        s.close()
+    return ip_address
 
 @app.route("/settings")
 @login_required
@@ -136,7 +150,8 @@ def settings():
     managed = get_interfaces(Mode.MANAGED)
     monitor = get_interfaces(Mode.MONITOR)
     gps_running = gps.gps_is_running()
-    return render_template("settings.html", title="Settings", managed=managed, monitor=monitor, gps_running=gps_running)
+    ip = get_ip()
+    return render_template("settings.html", title="Settings", managed=managed, monitor=monitor, gps_running=gps_running, ip_address=ip)
 
 ########################################HARDWARE RELATED#########################################
 
