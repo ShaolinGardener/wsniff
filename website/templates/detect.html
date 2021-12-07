@@ -46,53 +46,52 @@
         return a
       }
 
-      function refresh() {
+      async function refresh() {
         const table = document.getElementById("aps");
-        //first remove old content
+
+        //first retrieve new information
+        let response = await fetch("{{ url_for('detect_get') }}");
+        let aps = (await response.json()).aps
+
+
+        //then replace old content
         table.innerHTML = ""
-        //then replace with updated information
-        fetch("{{ url_for('detect_get') }}")
-          .then(response => response.json())
-          .then(function(data) {
-            let aps = data.aps
-            for(let mac in aps) {
-              let bssid = aps[mac][0]
-              let ssid = aps[mac][1]
-              let channel = aps[mac][2]
-              let signal_strength = aps[mac][3]
-              let encryption = aps[mac][4]
-              let vendor = aps[mac][5]
-              
-              let tr = createNode('tr')
-              let td_bssid = createNode('td')
-              td_bssid.innerHTML = bssid
-              let td_ssid = createNode('td')
-              
-              let a = create_link(ssid, bssid)
-              append(td_ssid, a)
+        for(let ap of aps) {
+          let bssid = ap[0]
+          let ssid = ap[1]
+          let channel = ap[2]
+          let signal_strength = ap[3]
+          let encryption = ap[4]
+          let vendor = ap[5]
+          
+          let tr = createNode('tr')
+          let td_bssid = createNode('td')
+          td_bssid.innerHTML = bssid
+          let td_ssid = createNode('td')
+          
+          let a = create_link(ssid, bssid)
+          append(td_ssid, a)
 
-              //td_ssid.innerHTML = ssid
-              let td_channel = createNode('td')
-              td_channel.innerHTML = channel
-              let td_strength = createNode('td')
-              td_strength.innerHTML = signal_strength
-              let td_encryption = createNode('td')
-              td_encryption.innerHTML = encryption
-              let td_vendor = createNode('td')
-              td_vendor.innerHTML = vendor
+          //td_ssid.innerHTML = ssid
+          let td_channel = createNode('td')
+          td_channel.innerHTML = channel
+          let td_strength = createNode('td')
+          td_strength.innerHTML = signal_strength
+          let td_encryption = createNode('td')
+          td_encryption.innerHTML = encryption
+          let td_vendor = createNode('td')
+          td_vendor.innerHTML = vendor
 
-              append(table, tr);
-              append(tr, td_bssid);
-              append(tr, td_ssid);
-              append(tr, td_channel);
-              append(tr, td_strength);
-              append(tr, td_encryption);
-              append(tr, td_vendor);
-            }
-          })
-          .catch(function(error) {
-            console.log(error);
-          });
+          
+          append(tr, td_bssid);
+          append(tr, td_ssid);
+          append(tr, td_channel);
+          append(tr, td_strength);
+          append(tr, td_encryption);
+          append(tr, td_vendor);
+          append(table, tr);
+        }
+          
       }
       
       refresh()
