@@ -26,6 +26,7 @@ import secrets
 import random
 import socket
 import os, shutil
+import subprocess
 import json
 from scapy.all import *
 
@@ -934,8 +935,20 @@ def configure_external_wifi():
         with open(wpa_supplicant_path, "a") as f: #now add new information to file
             f.write(network_info)
 
+        try:
+            #try to use wpa_cli to dynamically reconnect with new credentials
+            cmd = "wpa_cli reconfigure"
+            proc_res = subprocess.run(cmd, text=True, capture_output=True, shell=True, check=True)
+            res = proc_res.stdout
+            if res:
+                print(f"[+] wpa_cli reconfigure: {res}")
+                flash("Reconnecting to new network.", "success")
+        except subprocess.CalledProcessError as e:
+            #otherwise tell the user to reconnect via a reboot
+            print(f"[-] wpa_cli reconfigure failed: {e}")
+            flash(f"Reboot to connect to new network.", "info")
 
-        flash(f"New configuration was saved.", "success")
+
         return redirect(url_for("settings"))
     
     #displayed 
