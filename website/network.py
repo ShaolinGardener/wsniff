@@ -3,9 +3,10 @@ import socket
 from threading import Thread, Event
 from enum import Enum
 
-from website.settings import ROLE
+from website.settings import ROLE, PORT_SLAVE
+import website.interfaces as interfaces
 
-UDP_PORT = 4242
+UDP_PORT = PORT_SLAVE
 IP_BROADCAST = "255.255.255.255"
 
 #packets

@@ -30,6 +30,16 @@ class Interface:
 
         self.str_monitor_enable  = f"ifconfig {self.name} down; iw dev {self.name} interface add {self.mon_name} type monitor; ifconfig {self.mon_name} down; iw dev {self.mon_name} set type monitor; ifconfig {self.mon_name} up"
         self.str_monitor_disable = f"iw dev {self.mon_name} del; ifconfig {self.name} up"
+        self.str_monitor_enable_new  = f"sudo ip link set {self.name} down; sudo iw dev {self.name} interface add {self.mon_name} type monitor; sudo ip link set {self.mon_name} down; sudo iw dev {self.mon_name} set type monitor; sudo ip link set {self.mon_name} up"
+        self.str_monitor_disable_new = f"sudo iw dev {self.mon_name} del; sudo ip link set {self.name} up"
+
+        self.str_monitor_enable_new  = f"sudo ip link set {self.name} down; \
+                                        sudo iw dev {self.name} interface add {self.mon_name} type monitor; \
+                                        sudo ip link set {self.mon_name} down; \
+                                        sudo iw dev {self.mon_name} set type monitor; \
+                                        sudo ip link set {self.mon_name} up" 
+        self.str_monitor_disable_new = f"sudo iw dev {self.mon_name} del; \
+                                        sudo ip link set {self.name} up"
 
 
     def __str__(self):

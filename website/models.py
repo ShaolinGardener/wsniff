@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from enum import unique
 from flask import current_app
 
@@ -30,6 +31,20 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f"User('{self.id}', '{self.username}')"
 
+class Device(db.Model):
+    """
+    For global (distributed) captures, we need globally unique capture IDs.
+    In order to generate these, we use a device specific uuid which is stored here.
+    For every device, just one record should be in this table (being generated on the first startup).
+    """
+    #show this table should only contain one entry
+    __tablename__ = 'device'
+
+    #in order to get a globally unique identifier for a device without a central registrar,
+    #uuid1 can be used which uses the MAC address of the device which alone should already serve 
+    #the purpose unless the user has meddled with it - uuid1 also uses other parameters so we can be
+    #sure everything works as intended
+    device_identifier = db.Column(db.String(36), primary_key=True, default=str(uuid.uuid1()))
 
 class Server(db.Model):
     """
@@ -49,15 +64,68 @@ class Server(db.Model):
 
 
 class CaptureState:
+    """
+    State a capture object can be in. Important to keep consistency (especially in a distributed situation). 
+
+    Can either be PREPARED, RUNNING, COMPLETED or FAILED. 
+    """
+    PREPARED = 0
+    """ (Concerning [distributed] global captures) All measures have been taken (creating local DB records etc.)
+         so that we can now actually start capturing. """
+
     FAILED = 1
+    """ Some error occured. We might need to do some cleanup. """
+
     RUNNING = 2
+    """ Data is being captured. """
+
     COMPLETED = 3
+    """ The capture has been stopped, meaning all the data we wanted is stored safely. """
+
+    FINISHED = 4
+    """ No further actions need to be done relating this capture. All the data lies on a single device and can be accessed directly."""
 
 class CaptureType:
+    """
+    All types of captures that are available.
+    The chosen type value is used in the discriminator attribute in the table hierarchy of the database and 
+    can be used on the logic layer to detect the capture type of a capture object.
+    """
     TEST = 0
     CAPTURE_ALL = 1
     WARDRIVING = 2
     ONLINE_WARDRIVING = 3
+
+class CaptureChannel(db.Model):
+    """
+    Since one capture can comprise the observation of multiple 802.11 channels, the capture entity type
+    needs a multivalued attribute for the observed channels.
+    But because the relational data model does not support this, we need a dedicated table for this attribute.
+    """
+    __tablename__ = 'capture_channels'
+
+    #this maps one cahnnel attribute value to the capture it belongs to
+    #since the existence of the attribute depends on the capture entity, we want the CASCADE option as a foreign 
+    #key constraint here
+    capture_id = db.Column(db.Integer, db.ForeignKey("captures.id", ondelete='CASCADE'), primary_key=True)
+
+    #one of the channels that should be observed for this capture
+    #to map the multivalued attribute 'observed channels', this has to be part of the primary key
+    channel = db.Column(db.Integer, primary_key=True)
+
+
+class Sniffer(db.Model):
+    """
+    Stores information about other sniffers that are connected to this one and
+    are used to perform distributed captures.
+    """
+    __tablename__ = 'sniffers'
+
+    #since the IP address can be reassigned to a different device in differen sessions, we need an ID here
+    #id = db.Column(db.Integer, primary_key=True)
+    capture_id = db.Column(db.Integer, db.ForeignKey("captures.id", ondelete="CASCADE"), primary_key=True)
+    #stores the IPv4 address of this sniffer
+    ip_address = db.Column(db.String(15), primary_key=True)
 
 class Capture(db.Model):
     """
@@ -75,24 +143,28 @@ class Capture(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
 
-    #discrimatnor column which is used for indicating the type of object represented within this row
+    #discriminator column which is used for indicating the type of object represented within this row
     type = db.Column(db.String(50))
     __mapper_args__ = {
         'polymorphic_identity': 'captures',
         'polymorphic_on': type
     }
 
+    #flag whether the capture was done entirely by this sniffer or if there were other sniffers involved
+    is_distributed = db.Column(db.Boolean, nullable=False, default=False)
+
+    #since distributed (global) captures are stored in the same table as local captures but we need a unique
+    #identifier that is unique across all capture tables to retrieve the information of a global capture
+    #we have to store an additional global capture id for distributed (global) captures
+    #format: <device_identifier>(36):<master_local_capture_id>
+    global_id = db.Column(db.String(50), nullable=True, unique=True)
 
     #channels that are observed as part of this capture
     channels = db.relationship('CaptureChannel', cascade="all, delete")
 
+    #other sniffers that were involved in this capture in case this was a distributed capture
+    sniffers = db.relationship('Sniffer', cascade="all, delete")
 
-    def set_channels(self, channels: list):
-        """
-        Expects a list of integers representing the channel which are observed as part of this capture
-        """
-        for channel in channels:
-            self.channels.append(CaptureChannel(capture_id=self.id, channel=channel))
 
     def get_channels(self):
         """
@@ -101,6 +173,20 @@ class Capture(db.Model):
         #get channel values
         channels = [ch.channel for ch in self.channels]
         return channels
+
+    def add_channels(self, channels: list):
+        """
+        Expects a list of integers representing the channel which are observed as part of this capture
+        Append this list to the already existing list of observed channels.
+
+        Note: since different participants of a capture are allowed to have overlapping channels,
+        only add the channels that are not yet in the own list of channels.
+        """
+        existing_channels = set(self.get_channels())
+        for channel in channels:
+            #only add channels that are not already in the table anyway
+            if channel not in existing_channels:
+                self.channels.append(CaptureChannel(capture_id=self.id, channel=channel))
 
     def get_channel_string(self):
         """
@@ -114,7 +200,7 @@ class Capture(db.Model):
         #for instance, [1, 2, 3, 4, 7, 11, 12] will be 
         #mapped to     [(1, 4), (7, 7), (11, 12)]
         res = []
-        start, channel = None, None
+        start, channel, predecessor = None, None, None
         for channel in channels:
             if not start:
                 start = channel
@@ -131,8 +217,9 @@ class Capture(db.Model):
 
             predecessor = channel
 
-        #add last partition
-        res.append((start, predecessor))
+        if predecessor:
+            #add last partition
+            res.append((start, predecessor))
 
         #now create a corresponding string
         output = ""
@@ -148,6 +235,11 @@ class Capture(db.Model):
         #but this way it is easier to read
         return output
 
+    def add_participant(self, ip_address):
+        """
+        Add another participant to this distributed capture as a slave.
+        """
+        self.sniffers.append(Sniffer(capture_id=self.id, ip_address=ip_address))
 
     def __repr__(self):
         return f"Capture('{self.id}', '{self.title}', '{self.date_created}')"
@@ -171,8 +263,6 @@ class FullCapture(Capture):
 
     #whether gps information is recorded
     gps_tracking = db.Column(db.Boolean, nullable=False, default=False)
-    #TODO: allow multiple channels
-    channel = db.Column(db.Integer, nullable=False)
 
     def get_dir_path(self):
         return os.path.join(app.root_path, "static", "captures", self.dir_name)
@@ -283,3 +373,19 @@ class Discovery(db.Model):
             "gps_lon": self.gps_lon 
         }
         return data
+
+    def create_from_dict(d: dict):
+        """
+        Create a discovery object from this cap object.
+        The dict should NOT contain an ID since that depends on present table entries.
+        """
+        return Discovery(
+            mac = d.get("mac"),
+            channel = d.get("channel"), 
+            encryption = d.get("encryption"),
+            signal_strength = d.get("signal_strength"),
+            ssid = d.get("ssid"),
+            timestamp = datetime.fromtimestamp(d.get("timestamp")),
+            gps_lat = d.get("gps_lat"),
+            gps_lon = d.get("gps_lon"),
+        )

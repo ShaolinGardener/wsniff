@@ -8,6 +8,7 @@ from website.models import User
 class CaptureForm(FlaskForm):
     title = StringField("Name", validators=[DataRequired(), Length(min=2, max=256)])
     desc = StringField("Description", validators=[])
+    distributed_capture = BooleanField(label="Distributed Capture", default=False)
     submit = SubmitField("Start Capture")
 
 class CaptureAllForm(CaptureForm):
@@ -33,7 +34,7 @@ class RegistrationForm(FlaskForm):
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError("There already is a user with that name. Please choose another username.");
+            raise ValidationError("There already is a user with that name. Please choose another username.")
 
 
 class LoginForm(FlaskForm):

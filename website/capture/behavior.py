@@ -78,19 +78,23 @@ class CaptureAllBehavior(CaptureBehavior):
         cap: the database object representing this capture
             Stores all the information needed for this capture behavior
         """
-        self.channel = cap.channel
+        #TODO: enable support for multiple channels
+        self.channels = cap.get_channels()
+
         self.gps_tracking = cap.gps_tracking
         self.dir_path = cap.get_dir_path()
         self.lock = Lock()
 
     def start_capture(self):
         #set all interfaces to the specified channel
-        for interface in self.capture.interfaces:
-            interface.set_channel(self.channel)
+        for i in range(min(len(self.channels), len(self.capture.interfaces))):
+            self.capture.interfaces[i].set_channel(self.channels[i])
 
         #create directory for files that belong to this capture
         os.makedirs(self.dir_path)
 
+        #to enable multiple channels: implement CaptureThread class in capture.py and
+        #give each thread an id: then each thread should have its own PcapWriter
         self.pcap_filepath = os.path.join(self.dir_path, "cap.pcap")
         self.packet_writer = PcapWriter(self.pcap_filepath,
                                         append=True, sync=True)
@@ -151,7 +155,10 @@ class MapAccessPointsBehavior(CaptureBehavior):
     can be used to create a map of access points / wardriving
     """  
     
-    def __init__(self, map:Map):
+    def __init__(self, map: Map):
+        #the 802.11 channels to observe 
+        self.channels = map.get_channels()
+
         #bssid as unique identifier, AccessPoint object as value
         # bssid: str -> ap: AcessPoint
         self.aps = dict() #all APs that are uncovered 
@@ -167,7 +174,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
 
         #hop through channels - hopping thread
         hopping_strategy = EvenlyDistributedHopping(delay=0.25)
-        self.hopper = Hopper(hopping_strategy, self.capture.interfaces, list(range(1, 14)))
+        self.hopper = Hopper(hopping_strategy, self.capture.interfaces, self.channels)
         self.hopper.start() 
 
         #cleaning thread
@@ -189,7 +196,8 @@ class MapAccessPointsBehavior(CaptureBehavior):
         d.gps_lon=ap.lon
         d.encryption = ap.encryption
         d.timestamp = datetime.fromtimestamp(ap.t_last_seen)
-        d.map = self.map
+        #somehow d.map = self.map fails
+        d.map_id = self.map.id
 
         try:
             db.session.add(d)
@@ -278,6 +286,9 @@ class OnlineMapBehavior(CaptureBehavior):
     """  
     
     def __init__(self, map:Map):
+        #the 802.11 channels to observe 
+        self.channels = map.get_channels()
+        
         #bssid as unique identifier, AccessPoint object as value
         #bssid: str -> ap: AcessPoint
         self.aps = dict() #all APs that are uncovered 
@@ -293,7 +304,7 @@ class OnlineMapBehavior(CaptureBehavior):
 
         #hop through channels - hopping thread
         hopping_strategy = EvenlyDistributedHopping(delay=0.25)
-        self.hopper = Hopper(hopping_strategy, self.capture.interfaces, list(range(1, 14)))
+        self.hopper = Hopper(hopping_strategy, self.capture.interfaces, self.channels)
         self.hopper.start()
 
         #cleaning thread

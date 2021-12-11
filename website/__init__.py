@@ -22,7 +22,7 @@ login_manager.login_view = "login"
 login_manager.login_message = "You have to log in before using wsniff."
 login_manager.login_message_category = "danger"
 
-from website.models import Capture, User
+from website.models import Capture, User, Device
 
 
 #because of gunicorn you have to call this in __init__.py
@@ -40,6 +40,12 @@ def setup():
         print("[+] Create empty database")
         db.drop_all()
         db.create_all()
+
+        #add device record (with globally unique device identifier) 
+        #for distributed captures
+        d = Device() #identifier is generated automatically
+        db.session.add(d)
+        db.session.commit()
 
     #in order for sqlite to pay attention to the foreign key constraint
     #(and also things like ON DELETE CASCADE) you have to call 

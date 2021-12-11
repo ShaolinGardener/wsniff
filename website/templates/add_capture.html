@@ -39,6 +39,24 @@
                 {% endif %}
             </div>
 
+            
+            <!-- distributed capture checkbox -->
+            <div class="form-check mb-3">
+                {% if distributed_capture_possible %}
+                  {{ form.distributed_capture(class='form-check-input') }}
+                {% else %}
+                  {{ form.distributed_capture(class='form-check-input', **{'disabled': disabled}) }}
+                {% endif %}
+                {{ form.distributed_capture.label(class='form-check-label') }}
+                
+                {% if distributed_capture_possible %}
+                    <div><small class="text-muted">Use the combined force of all connected sniffers for this capture.</small></div> 
+                {% else %}
+                    <div><small class="text-muted">Connect other sniffers to this device in order to enable distributed captures.</small></div>
+                {% endif %}
+            </div> <!-- END distributed capture checkbox -->
+           
+
             {% if capture_type == 1 %} <!--TODO: make this better-->
             <!-- channel -->
             <div class="form-group">

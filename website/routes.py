@@ -4,7 +4,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 
 from website import app, db, bcrypt
 from website.forms import RegistrationForm, LoginForm, CaptureAllForm, WardrivingForm, ExternalWiFiForm, ServerConnectionForm, ServerDeviceRegistrationForm
-from website.models import OnlineMap, User, Capture, CaptureState, CaptureType, FullCapture, Map, Discovery
+from website.models import Device, OnlineMap, User, Capture, CaptureState, CaptureType, FullCapture, Map, Discovery, Sniffer
 
 import website.capture.capture as capture
 from website.capture.behavior import CaptureAllBehavior, MapAccessPointsBehavior, OnlineMapBehavior
@@ -13,7 +13,7 @@ from website.aps import start_scan, stop_scan, get_aps
 import website.gps as gps
 from website.interfaces import Interface, get_interfaces, Mode, monitor_interface_available, get_all_interfaces
 import website.oui as oui
-from website.settings import WPA_SUPPLICANT_BACKUP_PATH
+from website.settings import WPA_SUPPLICANT_BACKUP_PATH, PORT_SLAVE
 import website.server as server
 import website.api as api
 import website.network as network
@@ -23,7 +23,8 @@ import display.display as display
 import requests
 from sqlalchemy import desc
 import secrets
-import random
+import base64
+import math
 import socket
 import os, shutil
 import subprocess
@@ -274,25 +275,548 @@ def gps_show():
 
 #########################################CAPTURE SECTION#########################################
 
+@app.route("/capture/new/select")
+@login_required
+def new_capture_selection():
+    """
+    Show all caputure modes available
+    """
+    #is an interface with monitor mode available?
+    # if not monitor_interface_available():
+    #     flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+    #     return redirect(url_for("settings"))
+
+    return render_template("add_capture_overview.html", title="Add Capture")
+
+@app.route("/capture/new", methods=["GET", "POST"])
+@login_required
+def new_capture():
+    """
+    Show form to user depending on capture mode
+    """
+    #is an interface with monitor mode available?
+    if not monitor_interface_available():
+        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
+        return redirect(url_for("settings"))
+
+    try: 
+        capture_type = int(request.args.get("capture_type"))
+    except:
+        pass
+    if not capture_type: capture_type = 1
+
+    if capture_type == CaptureType.CAPTURE_ALL:
+        capture_type = CaptureType.CAPTURE_ALL
+        form = CaptureAllForm()
+    elif capture_type == CaptureType.WARDRIVING:
+        capture_type = CaptureType.WARDRIVING
+        form = WardrivingForm()
+    elif capture_type == CaptureType.ONLINE_WARDRIVING:
+        capture_type = CaptureType.ONLINE_WARDRIVING
+        form = WardrivingForm()
+    else: #default 
+        raise Exception("[-] This should not be possible because capture_type should have been set to CaptureAll by default")
+
+    if form.validate_on_submit():
+        title = form.title.data
+        desc = form.desc.data
+        user_id = current_user.id
+        is_distributed = form.distributed_capture.data
+        
+        cap_data = {
+            "capture_type": capture_type,
+            "title": title,
+            "desc": desc,
+            "user_id": user_id,
+            "is_distributed": is_distributed,
+        } 
+
+        #add capture type specific information
+        #TODO: support multiple channels on frontend
+        channels = None
+        if capture_type == CaptureType.CAPTURE_ALL:
+            channels = [form.channel.data]
+            cap_data["gps_tracking"] = form.gpsTracking.data
+        elif capture_type == CaptureType.WARDRIVING:
+            channels = list(range(1, 14))
+        elif capture_type == CaptureType.ONLINE_WARDRIVING:
+            #first call this before on the master
+            channels = list(range(1, 14))
+            server_map_id = api.create_map(title, description=desc)
+            cap_data["server_map_id"] = form.server_map_id.data
+        else:
+            flash("This capture type does not exist.", "success")
+            return redirect(url_for("home"))
+        
+        #split the channels between all participants
+        #for each participant, add a list of channels to channel_workloads
+        #this way, you can simply pop an element of the workload and use that as the channels
+        #of that local capture
+        channel_workloads = []
+        other_participants = network.get_master().get_connected_devices()
+        n = 1 + len(other_participants)
+        channel_workloads = []
+        workload_size = math.ceil(len(channels)/n)
+        #workload_size = len(channels) // n
+        for workload_i in range(n):
+            start = workload_i*workload_size
+            if workload_i != n-1:
+                end = start+workload_size
+            else:
+                end = len(channels)
+            channel_workloads.append(channels[start:end])
+
+
+        #create local capture (on this master sniffer)
+        cap_data["channels"] = channel_workloads.pop()
+        resp = requests.post(f"http://localhost:80{url_for('create_local_capture')}", json=cap_data)
+        data = resp.json()
+        msg = data.get("message", "Error occured.")
+        
+        #in case an error occurs, display the error message
+        #otherwise display that the capture started successfully
+        cap_id = None                                      
+        if resp.status_code != 200:
+            flash(msg, "danger")
+            return redirect(url_for("home"))
+        else:
+            cap_id = data.get("cap_id")
+        
+        #distributed capture
+        if is_distributed:
+            cap: Capture = Capture.query.get(cap_id)
+            #if this is a distributed capture, store the participating nodes
+            other_participants = network.get_master().get_connected_devices()
+            for participant in other_participants:
+                cap.add_participant(participant)
+                
+            #generate a global id 
+            #it should identify the global (distributed) capture
+            #across all participating devices: use a hierarchal structure
+            device_id = Device.query.first().device_identifier
+            global_id = f"{device_id}:{cap_id}"
+            
+            #update existing local entry on master
+            cap.global_id = global_id
+            #save changes to the local capture
+            db.session.commit()
+            #our local capture entry on the master is finally complete
+            
+            #now we can create the local captures on the other participating nodes
+            cap_data["global_id"] = global_id
+            for participant in other_participants:
+                cap_data["channels"] = channel_workloads.pop()
+                resp = requests.post(f"http://{participant}:{PORT_SLAVE}{url_for('create_local_capture')}", json=cap_data)
+                if resp.status_code != 200:
+                    #TODO: here an undo of adding all previous local captures would be necessary
+                    print(data)
+                    print(resp.json().get("message", "Error occured"))
+                else:
+                    print(resp.json().get("message"))
+            #all local captures should now be in state PREPARED
+            
+            #start the local captures on the other nodes
+            for participant in other_participants:
+                resp = requests.get(f"http://{participant}:{PORT_SLAVE}{url_for('start_global_capture', global_id=global_id)}")
+                if resp.status_code != 200:
+                    #TODO: here an undo would be necessary
+                    print(resp.json().get("message", "Error occured"))
+            #all local captures except the one on the master should be in state RUNNING
+            #now, just like in the solitary mode, start the local capture on this master node
+
+        #after creating the local capture on this node, we can start it (solitary as well as distributed capture mode)
+        resp = requests.get(f"http://localhost:80{url_for('start_local_capture', cap_id=cap_id)}")
+        data = resp.json()
+        msg = data.get("message", "Error occured")
+
+        if resp.status_code == 200:
+            flash(msg, "success")
+        else:
+            flash(msg, "danger")
+
+        return redirect(url_for("home"))
+
+    gps_available = gps.is_gps_available()
+    distributed_capture_possible = len(network.get_master().get_connected_devices()) > 0
+
+    return render_template("add_capture.html", title="Add Capture", capture_type=capture_type, form=form, gps_available=gps_available, distributed_capture_possible=distributed_capture_possible)
+
+def _get_unique_dir_path(title: str):
+    """
+    Returns a unique directory path so that no 2 captures will have the same path.
+    """
+    while True:
+        postfix = secrets.token_hex(8)
+        dir_name = f"{title}_{postfix}"
+
+        #if there already is a full capture with that dir_name, try a new one, 
+        #else we are finished 
+        c = FullCapture.query.filter_by(dir_name=dir_name).first()
+        if c:
+            continue
+        else:
+            return dir_name
+
+@app.route("/capture/local", methods=["POST"])
+def create_local_capture():
+    cdata = request.json
+    capture_type = cdata.get("capture_type")
+    title = cdata.get("title")
+    desc = cdata.get("desc")
+    user_id = cdata.get("user_id")
+    channels = cdata.get("channels")
+    is_distributed = cdata.get("is_distributed")
+    
+    if not all(v is not None for v in [capture_type, title, desc, user_id, channels, is_distributed]):
+        return jsonify({'message': 'Data missing.'}), 400 
+
+    #None in case no global_id is provided (e.g. it is not a distributed capture
+    #or the global_id is yet to be computed)
+    global_id = cdata.get("global_id")
+
+    #depending on the capture type, init capture and capture_behavior 
+    #with different objects 
+    if capture_type == CaptureType.CAPTURE_ALL:
+        gps_tracking = cdata.get("gps_tracking")
+        dir_name = _get_unique_dir_path(title)
+
+        cap = FullCapture(title=title, desc=desc, user_id=user_id, 
+                            gps_tracking=gps_tracking, dir_name=dir_name, 
+                            is_distributed=is_distributed, global_id=global_id)
+    
+    elif capture_type == CaptureType.WARDRIVING:
+        #create map DB entry
+        cap = Map(title=title, desc=desc, user_id=user_id, 
+                    is_distributed=is_distributed, global_id=global_id)
+    
+    elif capture_type == CaptureType.ONLINE_WARDRIVING:
+        #try to create map online
+        try:
+            #create new map on server
+            server_map_id = cdata.get("server_map_id")
+            #create local instance of map
+            #TODO: here we should also pass a server_id 
+            cap = OnlineMap(title=title, desc=desc, user_id=user_id, 
+                            server_map_id=server_map_id, global_id=global_id,
+                            is_distributed=is_distributed)
+        except:
+            return jsonify({'message': 'Online map creation failed.'}), 400
+        
+    else:
+        return jsonify({'message': 'This capture type does not exist.'}), 400
+
+    #now set the channels which this capture should observe
+    cap.add_channels(channels)
+
+    #in case this is a dristributed capture, store the global id
+    if is_distributed:
+        cap.global_id = global_id
+    
+    #add capture object to database
+    #remove channel out of Capture model
+    try: 
+        cap.state = CaptureState.PREPARED
+        db.session.add(cap)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        return jsonify({'message': 'Capture creation failed.'}), 400
+
+    #if everything went well, we can now return the capture id of this new entry
+    return jsonify({'message': 'Created new capture entry.', 'cap_id': cap.id}), 200
+    
+
+@app.route("/capture/global/<string:global_id>/start", methods=["GET"])
+def start_global_capture(global_id: str):
+    """
+    Find the local capture on this slave node that belongs to the given global capture and cause it to start 
+    """
+    cap = Capture.query.filter_by(global_id=global_id).first()
+    if cap is None:
+        return jsonify({'message': f'Capture with global id "{global_id}" does not exist.'}), 400 
+
+    #now we can find out the local capture id of this part of the global capture
+    id = cap.id
+
+    resp = requests.get(f"http://localhost:{PORT_SLAVE}{url_for('start_local_capture', cap_id=id)}")
+    #we don't care whether this was successful or not, just relay the result to the master node
+    return jsonify(resp.json()), resp.status_code
+
+@app.route("/capture/local/<int:cap_id>/start", methods=["GET"])
+def start_local_capture(cap_id):
+    cap = Capture.query.get(cap_id)
+    if not cap:
+        return jsonify({'message': f'Capture with local ID {cap_id} does not exist.'}), 400
+
+    #create a matching capture behavior based on the information stored in the database
+    if isinstance(cap, FullCapture):
+        capture_behavior = CaptureAllBehavior(cap)
+    elif isinstance(cap, Map):
+        capture_behavior = MapAccessPointsBehavior(cap)
+    elif isinstance(cap, OnlineMap):
+        capture_behavior = OnlineMapBehavior(cap)
+    else:
+        return jsonify({'message': f'start_local_capture for captures of type {cap.type} has not been implemented.'}), 400
+
+    #create captureBehavior and start capture with an ID that belongs 
+    #to that capture in the database (since we know for sure then that 
+    #there won't be two running captures with the same id )
+    id = cap.id
+    #there should be one since we have checked before
+    interfaces = get_interfaces(Mode.MONITOR)
+
+    #actually start capture
+    try:
+        capture.start_capture(id, interfaces, capture_behavior)
+        cap.state = CaptureState.RUNNING
+        db.session.commit()
+        #SUCCESS
+        return jsonify({'message': f'Capture {cap.title} started'}), 200
+    except ValueError as e:
+        #capture state in DB is FAILED by default when created, so we don't need to set this here
+        return jsonify({'message': f'Capture {cap.title} already running'}), 400
+
+
 @app.route("/capture/<int:id>/stop")
 @login_required
 def capture_stop(id):
     """
     Stop a certain capture
     """
-    title = request.args.get("title")
-    if not title: title = ""
-    
-    try:
-        capture.stop_capture(id)
-        c = Capture.query.get(id)
-        c.state = CaptureState.COMPLETED
-        db.session.commit()
-        flash(f"Capture {title} stopped", "success")
-    except ValueError as e:
-        flash(f"Capture {title} can't be stopped since it does not exist.", "danger")
+    cap: Capture = Capture.query.get(id)
+    if cap is None:
+        flash(f"Capture with id '{id}' does not exist.", "danger")
+        return redirect(url_for("home"))
+
+    if cap.is_distributed:
+        other_participants = cap.sniffers
+
+        global_id = cap.global_id
+
+        #stop local captures that belong to this (distributed) global capture
+        for participant in other_participants:
+            resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('stop_global_capture', global_id=global_id)}")
+            data = resp.json()
+            msg = data.get("message", "Error occured")
+            if resp.status_code != 200:
+                #todo: some kind of recovery
+                flash(f"Error stopping capture on device {participant.ip_address}: {msg}", "danger")
+                return redirect(url_for("home"))
+        #TODO: stop local master capture
+
+        #then collect and integrate the data on the master node
+        for participant in other_participants:
+            #just for testing:
+            continue
+
+            resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('collect_local_capture', global_id=global_id)}")
+            data = resp.json()
+            msg = data.get("message", "Error occured")
+            if resp.status_code != 200:
+                #todo: some kind of recovery
+                flash(f"Error collecting data on device {participant.ip_address}: {msg}", "danger")
+                return redirect(url_for("home"))
+            
+            #else (received data of this local capture)
+            #how we need to integrate the data depends on the capture type
+            if isinstance(cap, FullCapture):
+                #for every observed channel we want a separate capture file
+                pass
+            if isinstance(cap, Map):
+                #add discoveries belonging to this global capture to the local master capture
+                pass
+
+            #TODO: now we can set the global capture to FINISHED
+            #since we collected all the data of this global capture on this master node, we can delete it on the other nodes
+            #but we don't have to do this here synchronously but can also do it later (in theory)
+         
+    #if this is a normal local capture in solitary mode or a part of a global capture, either way we want to 
+    #stop this local capture on the master node here
+    resp = requests.get(f"http://localhost:80/{url_for('stop_local_capture', id=id)}")
+    data = resp.json()
+    msg = data.get("message", "Error occured")
+    if resp.status_code == 200:
+        flash(msg, "success")
+    else:
+        flash(msg, "danger")
 
     return redirect(url_for("home"))
+
+@app.route("/capture/global/<string:global_id>/stop", methods=["GET"])
+def stop_global_capture(global_id: str):
+    """
+    Find the local capture on this device that belongs to the given global capture and cause it to stop 
+    """
+    cap = Capture.query.filter_by(global_id=global_id).first()
+    if cap is None:
+        return jsonify({'message': f'Capture with global id "{global_id}" does not exist.'}), 400 
+
+    #now we can find out the local capture id of this part of the global capture
+    id = cap.id
+
+    #stop the actual capture process and all threads attached to it
+    try:
+        capture.stop_capture(id)
+    except ValueError as e:
+        return jsonify({'message': f'Capture with id "{id}" can\'t be stopped.'}), 400
+
+    #change the state of the capture record to completed
+    cap.state = CaptureState.COMPLETED
+    db.session.commit()
+    return jsonify({'message': f"Capture '{cap.title}' stopped."}), 200 
+
+
+@app.route("/capture/local/<int:id>/stop", methods=["GET"])
+def stop_local_capture(id: int):
+    """
+    Actually carries out stopping a LOCAL capture with the given id 
+    """
+    cap = Capture.query.get(id)
+    if cap is None:
+        return jsonify({'message': f'Capture with id "{id}" does not exist.'}), 400
+
+    #stop the actual capture process and all threads attached to it
+    try:
+        capture.stop_capture(id)
+    except ValueError as e:
+        return jsonify({'message': f'Capture with id "{id}" can\'t be stopped.'}), 400
+
+    #change the state of the capture record to completed
+    cap.state = CaptureState.COMPLETED
+    db.session.commit()
+    return jsonify({'message': f"Capture '{cap.title}' stopped."}), 200
+
+
+@app.route("/capture/<string:global_id>/global/collect", methods=["GET"])
+@login_required
+def collect_global_capture(global_id: str):
+    """
+    Collect all the local captures of this distributed global capture and integrate the data on the master node.
+    """
+    cap = Capture.query.filter_by(global_id=global_id).first()
+    if cap is None:
+        return jsonify({'message': f'Capture with global id "{global_id}" does not exist.'}), 400 
+
+    other_participants = cap.sniffers
+    for participant in other_participants:
+        resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('collect_local_capture', global_id=global_id)}")
+        data = resp.json()
+        msg = data.get("message", "Error occured")
+        if resp.status_code != 200:
+            #todo: some kind of recovery
+            flash(f"Error collecting data on device {participant.ip_address}: {msg}", "danger")
+            return redirect(url_for("home"))
+        else:
+            print(f"[+] {participant.ip_address}: {msg}")
+ 
+        #else (received data of this local capture)
+        #how we need to integrate the data depends on the capture type
+        if isinstance(cap, FullCapture):
+            #TODO: we want a seperate file for every channel
+            #get filename and the encoded content of the .pcap file 
+            filename = data.get("captured_data").get("filename")
+            file_path = os.path.join(cap.get_dir_path(), filename)
+
+            encoded_content = data.get("captured_data").get("encoded_content")
+            captured_data = base64.b64decode(encoded_content)
+
+            try:
+                file = open(file_path, "wb")
+                file.write(captured_data)
+                print(f"[+] Wrote data of {participant.ip_address}")
+            except Exception as e:
+                print(f"[-] Error writing data: {e}")
+        elif isinstance(cap, Map):
+            #add discoveries belonging to this global capture to the local master capture
+            discoveries = data.get("captured_data", [])
+            for discovery in discoveries:
+                d = Discovery.create_from_dict(discovery)
+                d.map_id = cap.id
+                try:
+                    db.session.add(d)
+                    db.session.commit()
+                except Exception as e:
+                    print(f"[-] Error adding discovery from {participant.ip_address}: {e}")
+        else:
+            #this case is already handled in collect_local_capture (and is caught above when handling the HTTP response)
+            pass
+
+        #completely unrelated to the type of capture are the channels this local capture observed
+        #also integrate this information
+        channels = data.get("channels")
+        if channels is None:
+            flash("Participant was missing channel information.", "danger")
+        cap.add_channels(channels)
+
+        #delete the data on the node we just retrieved it from
+        resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
+        data = resp.json()
+        msg = data.get("message", "Error occured")
+        if resp.status_code != 200:
+            #undo all previous deletions to remain in a consistent state
+            db.session.rollback()
+            flash(f"Error deleting data on device {participant.ip_address}: {msg}", "danger")
+            return redirect(url_for("home"))
+        else:
+            #actually update channel list
+            db.session.commit()
+            print(f"[+] {participant.ip_address}: {msg}") 
+    
+    
+    #now that all information is stored on this node, this has become a real local capture
+    for sniffer in cap.sniffers:
+        db.session.delete(sniffer)
+    cap.global_id = None
+    cap.is_distributed = False
+    db.session.commit()
+
+    flash("Collected and integrated the entire data on this device.", "success")
+    return redirect(url_for("home"))
+
+@app.route("/capture/local/<string:global_id>/collect", methods=["GET"])
+def collect_local_capture(global_id: str):
+    """
+    Find the local capture on this device that belongs to the given global capture and collect its data 
+    """
+    cap = Capture.query.filter_by(global_id=global_id).first()
+    if cap is None:
+        return jsonify({'message': f'Capture with global id "{global_id}" does not exist.'}), 400 
+
+    #now we can find out the local capture id of this part of the global capture
+    id = cap.id
+
+    #retrieve the channels that were observed
+    channels = cap.get_channels()
+
+    #collect the local data of this global capture
+    #for this purpose, store the captured data in a generic variable whose
+    #content depends on the capture type
+    captured_data = None
+    if isinstance(cap, FullCapture):
+        pcap_filepath = os.path.join(cap.get_dir_path(), "cap.pcap")
+        with open(pcap_filepath, "rb") as file:
+            file_content = file.read()
+            #create base 64 string representation of the file 
+            encoded_content = base64.b64encode(file_content).decode("utf-8")
+            captured_data = {
+                "filename": "todo",
+                "encoded_content": encoded_content
+            }
+    elif isinstance(cap, Map):
+        captured_data = []
+        for discovery in cap.discoveries:
+            d = discovery.get_as_dict()
+            captured_data.append(d)
+    else:
+        return jsonify({'message': f"Data collection for this capture type is not implemented."}), 400  
+
+    #return the local capture data as JSON
+    return jsonify({
+        'message': f"Data collected successfully.",
+        'channels': channels, 
+        'captured_data': captured_data
+    }), 200 
+
 
 @app.route("/capture/<int:id>")
 @login_required
@@ -365,162 +889,76 @@ def capture_download(id):
 
     return redirect(url_for("home"))
 
-
-@app.route("/capture/new/select")
-@login_required
-def new_capture_selection():
-    """
-    Show all caputure modes available
-    """
-    #is an interface with monitor mode available?
-    if not monitor_interface_available():
-        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
-        return redirect(url_for("settings"))
-
-    return render_template("add_capture_overview.html", title="Add Capture")
-
-@app.route("/capture/new", methods=["GET", "POST"])
-@login_required
-def new_capture():
-    """
-    Show form to user depending on capture mode
-    """
-    #is an interface with monitor mode available?
-    if not monitor_interface_available():
-        flash("You have to enable monitor mode for one of your capable interfaces before you can do that.", "danger")
-        return redirect(url_for("settings"))
-
-    try: 
-        capture_type = int(request.args.get("capture_type"))
-    except:
-        pass
-    if not capture_type: capture_type = 1
-
-    if capture_type == CaptureType.CAPTURE_ALL:
-        capture_type = CaptureType.CAPTURE_ALL
-        form = CaptureAllForm()
-    elif capture_type == CaptureType.WARDRIVING:
-        capture_type = CaptureType.WARDRIVING
-        form = WardrivingForm()
-    elif capture_type == CaptureType.ONLINE_WARDRIVING:
-        capture_type = CaptureType.ONLINE_WARDRIVING
-        form = WardrivingForm()
-    else: #default 
-        raise Exception("[-] This should not be possible because capture_type should have been set to CaptureAll by default")
-
-    if form.validate_on_submit():
-        _create_and_start_capture(capture_type, form)
-        return redirect(url_for("home"))
-
-    gps_available = gps.is_gps_available()
-
-    return render_template("add_capture.html", title="Add Capture", capture_type=capture_type, form=form, gps_available=gps_available)
-
-def _get_unique_dir_path(title: str):
-    """
-    Returns a unique directory path so that no 2 captures will have the same path.
-    """
-    while True:
-        postfix = secrets.token_hex(8)
-        dir_name = f"{title}_{postfix}"
-
-        #if there already is a full capture with that dir_name, try a new one, 
-        #else we are finished 
-        c = FullCapture.query.filter_by(dir_name=dir_name).first()
-        if c:
-            continue
-        else:
-            return dir_name
-
-def _create_and_start_capture(capture_type: CaptureType, form):
-    """
-    Actually starts a new capture. Called by new_capture.
-    """
-    title = form.title.data
-    desc = form.desc.data
-    user_id = current_user.id
-
-    cap = None
-    capture_behavior = None
-
-    #depending on the capture type, init capture and capture_behavior 
-    #with different objects 
-    if capture_type == CaptureType.CAPTURE_ALL:
-        channel = form.channel.data
-        gps_tracking = form.gpsTracking.data
-        dir_name = _get_unique_dir_path(title)
-
-        cap = FullCapture(title=title, desc=desc, user_id=user_id, 
-                            gps_tracking=gps_tracking, channel=channel, dir_name=dir_name)
-        capture_behavior = CaptureAllBehavior(cap)
-        
-    elif capture_type == CaptureType.WARDRIVING:
-        #create map DB entry
-        cap = Map(title=title, desc=desc, user_id=user_id)
-        
-        capture_behavior = MapAccessPointsBehavior(cap)
-
-    elif capture_type == CaptureType.ONLINE_WARDRIVING:
-        #try to create map online
-        try:
-            #create new map on server
-            server_map_id = api.create_map(title, description=desc)
-            #create local instance of map
-            #TODO: here we should also pass a server_id 
-            cap = OnlineMap(title=title, desc=desc, user_id=user_id, 
-                            server_map_id=server_map_id)
-        except:
-            flash("Online map creation failed.", "danger")
-            return 
-        
-        #if the map creation on both the server and the local machine worked, 
-        #create capture behavior
-        capture_behavior = OnlineMapBehavior(cap)
-    else:
-        raise Exception("[-] This should not be possible.")
-
-
-    #add capture object to database
-    #remove channel out of Capture model
-    try: 
-        db.session.add(cap)
-        db.session.commit()
-    except Exception as e:
-        print(e)
-        flash("Capture creation failed.", "danger")
-        return 
-    
-
-    #create captureBehavior and start capture with an ID that belongs 
-    #to that capture in the database
-    id = cap.id
-    #there should be one since we have checked in new_capture
-    interfaces = get_interfaces(Mode.MONITOR)
-
-    #actually start capture
-    try:
-        capture.start_capture(id, interfaces, capture_behavior)
-        cap.state = CaptureState.RUNNING
-        db.session.commit()
-        flash(f"Capture {title} started", "success")
-    except ValueError as e:
-        #capture state in DB is FAILED by default when created, so we don't need to set this here
-        flash(f"Capture {title} already running.", "danger")
-    
-    return #attention: this function returns to new_capture
-
-
 @app.route("/capture/<int:id>/delete")
 @login_required
 def capture_delete(id: int):
-    """
-    Delete a capture including its DB entries and files.
-    """
-    c = Capture.query.get(id)
-    if not c:
-        flash(f"Capture does not exist.", "danger")
-        return redirect(url_for("home")) 
+    cap = Capture.query.get(id)
+    if cap is None:
+        flash(f'Capture with id "{id}" does not exist.')
     
+    if cap.is_distributed:
+        #delete data on other nodes
+        other_participants = cap.sniffers
+        global_id = cap.global_id
+        for participant in other_participants:
+            resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
+            data = resp.json()
+            msg = data.get("message", "Error occured")
+            if resp.status_code != 200:
+                #undo all previous deletions to remain in a consistent state
+                db.session.rollback()
+                flash(f"Error deleting data on device {participant.ip_address}: {msg}", "danger")
+                return redirect(url_for("home"))
+            else:
+                print(f"[+] {participant.ip_address}: {msg}")
+
+    #delete local capture on this node
+    resp = requests.get(f"http://localhost:80/{url_for('delete_local_capture', id=id, id_type='local_id')}")
+    data = resp.json()
+    msg = data.get("message", "Error occured")
+    if resp.status_code == 200:
+        flash(msg, "success")
+    else:
+        db.session.rollback()
+        flash(msg, "danger")
+    
+    #only commit here so that the changes only apply if all deletions were possible
+    try:
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        return jsonify({"message": f"Error when trying to delete capture from database."}), 400
+
+    return redirect(url_for("home"))
+
+
+@app.route("/capture/local/<id>/delete")
+def delete_local_capture(id):
+    """
+    Delete a local capture including its DB entries and files.
+
+    :param id: ID which uniquely identifies this local capture. Can be a local ID, but also a global ID.
+    :param id_type: Should be passed as a query parameter .Indicates whether the id is a local or global ID. 
+                 Should be either set to 'local_id' or 'global_id'
+    """
+    #get id type
+    id_type = request.args.get('id_type')
+    if id_type is None:
+        return jsonify({"message": f"You need to specify an id type as a HTTP query parameter."}), 400
+    
+    #retrieve the capture depending on the id type
+    c = None
+    if id_type == "local_id":
+        c = Capture.query.get(id)
+    elif id_type == "global_id":
+        c = Capture.query.filter_by(global_id=id).first()
+    else:
+        return jsonify({"message": f"This ID type is not supported."}), 400 
+    
+    if not c:
+        return jsonify({"message": f"Capture with ID '{id}' does not exist."}), 400
+    
+    #set a default capture type name for the message sent back to the user
     capture_type = "Capture"
 
     #do cleanup depending on type of capture
@@ -538,13 +976,13 @@ def capture_delete(id: int):
     #delete it from the database
     try:
         db.session.delete(c)
+        #TODO: don't commit here (we want to do that at a higher level to keep consistency)
         db.session.commit()
-        flash(f"{capture_type} '{c.title}' was successfully deleted.", "success")
+        return jsonify({"message": f"{capture_type} '{c.title}' was successfully deleted."}), 200
     except Exception as e:
         print(e)
-        flash(f"Error when trying to delete capture from database.")
+        return jsonify({"message": f"Error when trying to delete capture from database."}), 400
 
-    return redirect(url_for("home")) 
 
 @app.route('/wardrive/<id>/aps', methods=['GET'])
 @login_required

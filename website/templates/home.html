@@ -26,7 +26,9 @@
         <div class="card-header text-muted">
             Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
             Id: {{ capture.id }}
-            GPS: {{ capture.gps }}
+            {% if capture.is_distributed %}
+              <span class="badge badge-info">distributed</span>
+            {% endif %} 
         </div>
         <div class="card-body">
         <h5 class="card-title">{{ capture.title }}</h5>
@@ -55,12 +57,18 @@
                     <div>
                       Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
                       Id: {{ capture.id }}
+                      {% if capture.is_distributed %}
+                        <span class="badge badge-info">distributed</span>
+                      {% endif %} 
                     </div>
                     <div>Observed channels: {{ capture.get_channel_string() }}</div>
                   </div>
                   <div class="card-body">
                   <h5 class="card-title">{{ capture.title }}</h5>
                   <p class="card-text">{{ capture.desc }}</p>
+                  {% if capture.is_distributed %}
+                    <a href="{{ url_for('collect_global_capture', global_id=capture.global_id) }}" class="btn btn-info mb-1">Collect & Convert</a>
+                  {% endif %} 
                   <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info mb-1">Download</a>
                   <a href="{{ url_for('show_delete_modal', id=capture.id) }}" class="btn btn-danger mb-1">Delete capture</a>
                   </div>
@@ -87,12 +95,18 @@
                     <div>
                       Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
                       Id: {{ capture.id }}
+                      {% if capture.is_distributed %}
+                        <span class="badge badge-info">distributed</span>
+                      {% endif %} 
                     </div>
                     <div>Observed channels: {{ capture.get_channel_string() }}</div>
                   </div>
                   <div class="card-body">
                     <h5 class="card-title">{{ capture.title }}</h5>
                     <p class="card-text">{{ capture.desc }}</p>
+                    {% if capture.is_distributed %}
+                      <a href="{{ url_for('collect_global_capture', global_id=capture.global_id) }}" class="btn btn-info mb-1">Collect & Convert</a>
+                    {% endif %} 
                     <a href="{{ url_for('wardrive_capture_show', id=capture.id) }}" class="btn btn-info mb-1">Show Result</a>
                     <a href="{{ url_for('capture_download', id=capture.id) }}" class="btn btn-info mb-1">Download</a>
                     <a href="{{ url_for('show_delete_modal', id=capture.id) }}" class="btn btn-danger mb-1">Delete</a>
