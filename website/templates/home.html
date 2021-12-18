@@ -51,10 +51,12 @@
         {% endif %}
           <div class="col-sm-6">
               <div class="card">
-                  <div class="card-header text-muted">
+                  <div class="card-header text-muted pb-1">
+                    <div>
                       Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
                       Id: {{ capture.id }}
-                      GPS: {{ capture.gps }}
+                    </div>
+                    <div>Observed channels: {{ capture.get_channel_string() }}</div>
                   </div>
                   <div class="card-body">
                   <h5 class="card-title">{{ capture.title }}</h5>
@@ -81,10 +83,12 @@
         {% endif %}
           <div class="col-sm-6">
               <div class="card">
-                  <div class="card-header text-muted">
+                  <div class="card-header text-muted pb-1">
+                    <div>
                       Created: {{ capture.date_created.strftime('%d.%m.%Y %H:%M') }}
                       Id: {{ capture.id }}
-                      GPS: {{ capture.gps }}
+                    </div>
+                    <div>Observed channels: {{ capture.get_channel_string() }}</div>
                   </div>
                   <div class="card-body">
                     <h5 class="card-title">{{ capture.title }}</h5>

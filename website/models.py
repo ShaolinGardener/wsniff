@@ -82,6 +82,73 @@ class Capture(db.Model):
         'polymorphic_on': type
     }
 
+
+    #channels that are observed as part of this capture
+    channels = db.relationship('CaptureChannel', cascade="all, delete")
+
+
+    def set_channels(self, channels: list):
+        """
+        Expects a list of integers representing the channel which are observed as part of this capture
+        """
+        for channel in channels:
+            self.channels.append(CaptureChannel(capture_id=self.id, channel=channel))
+
+    def get_channels(self):
+        """
+        Returns a list of integers representing the channels which this (local) capture observes
+        """
+        #get channel values
+        channels = [ch.channel for ch in self.channels]
+        return channels
+
+    def get_channel_string(self):
+        """
+        Returns the channels of this capture as a shortened string representation.
+        Takes an array of channels and returns a short string representation of them.
+        E.g.: [1, 2, 3, 7, 11, 12] will become "1-3 7 11-12"
+        """
+        channels = self.get_channels()
+        channels.sort()
+        
+        #for instance, [1, 2, 3, 4, 7, 11, 12] will be 
+        #mapped to     [(1, 4), (7, 7), (11, 12)]
+        res = []
+        start, channel = None, None
+        for channel in channels:
+            if not start:
+                start = channel
+                predecessor = channel
+                continue
+
+            if channel == predecessor + 1:
+                pass
+            else:
+                #end of current partition
+                res.append((start, predecessor))
+                #current channel is start of new partition
+                start = channel
+
+            predecessor = channel
+
+        #add last partition
+        res.append((start, predecessor))
+
+        #now create a corresponding string
+        output = ""
+        for partition in res:
+            if partition[0] == partition[1]:
+                output += str(partition[0])
+            else:
+                output += f"{partition[0]}-{partition[1]}"
+            output += " "
+        
+        #note: we could directly include the string building above 
+        #(no need to create a result array) to increase performance,
+        #but this way it is easier to read
+        return output
+
+
     def __repr__(self):
         return f"Capture('{self.id}', '{self.title}', '{self.date_created}')"
 
