@@ -13,12 +13,18 @@
       <li class="list-group-item">
         {{ iface.get_name() }}
         <a class="btn btn-primary btn-sm ml-4" href="{{ url_for('activate_monitor', interface=iface.name) }}">Activate Monitor Mode</a>
+        <p class="small text-muted mt-1 mb-0">
+          Supported channels: {{ iface.get_channel_string() }}
+        </p>
       </li>
       {% endfor %}
       {% for iface in monitor %}
       <li class="list-group-item">
         {{ iface.get_name() }}
         <a class="btn btn-danger btn-sm ml-1" href="{{ url_for('deactivate_monitor', interface=iface.name) }}">Deactivate</a>
+        <p class="small text-muted mt-1 mb-0">
+          Supported channels: {{ iface.get_channel_string() }}
+        </p>
       </li>
       {% endfor %}
     </ul>

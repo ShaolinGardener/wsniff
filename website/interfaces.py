@@ -28,6 +28,9 @@ class Interface:
             self.mon_name = name + "mon"
             self.current_name = name
 
+        #the 802.11 channels that this interface can listen on
+        self.channels = self.get_channels()
+
         self.str_monitor_enable  = f"ifconfig {self.name} down; iw dev {self.name} interface add {self.mon_name} type monitor; ifconfig {self.mon_name} down; iw dev {self.mon_name} set type monitor; ifconfig {self.mon_name} up"
         self.str_monitor_disable = f"iw dev {self.mon_name} del; ifconfig {self.name} up"
         self.str_monitor_enable_new  = f"sudo ip link set {self.name} down; sudo iw dev {self.name} interface add {self.mon_name} type monitor; sudo ip link set {self.mon_name} down; sudo iw dev {self.mon_name} set type monitor; sudo ip link set {self.mon_name} up"
@@ -71,6 +74,24 @@ class Interface:
         self.mode = Mode.MANAGED
         self.current_name = self.name
         print(f"[+] Deactivated monitor mode for {self.name}")
+ 
+    def get_channels(self):
+        interface = self.current_name
+        channels = []
+        try:
+            cmd = f"iwlist {interface} channel"
+            proc_res = subprocess.run(cmd, capture_output=True, shell=True, check=True)
+            res = proc_res.stdout.decode('utf-8')
+            channels = list(map(lambda line: int(line.split(' ')[-4]), res.split('\n')[1:-3]))
+        except subprocess.CalledProcessError as e:
+            print(f'[-] Could not determine available channels for interface {interface}')
+        return channels 
+    
+    def get_channel_string(self):
+        """
+        Returns the supported channels as a string
+        """
+        return ', '.join(map(lambda ch: str(ch), self.channels))
 
     def set_channel(self, channel: int):
         """
