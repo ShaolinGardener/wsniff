@@ -35,7 +35,7 @@
           let d = undefined;
           for(let device of devices) {
             d = document.createElement("li");
-            d.innerHTML = device;
+            d.innerHTML = "[" + device.device_id + "] --> " + device.ip_address;
             device_list.appendChild(d);
           }
         }

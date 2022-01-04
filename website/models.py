@@ -124,8 +124,10 @@ class Sniffer(db.Model):
     #since the IP address can be reassigned to a different device in differen sessions, we need an ID here
     #id = db.Column(db.Integer, primary_key=True)
     capture_id = db.Column(db.Integer, db.ForeignKey("captures.id", ondelete="CASCADE"), primary_key=True)
-    #stores the IPv4 address of this sniffer
-    ip_address = db.Column(db.String(15), primary_key=True)
+    #device identifier of this participant
+    device_identifier = db.Column(db.String(36), nullable=False) 
+    #note: it does not make sense to store the IP address here, since it can change over time, so it is better
+    #to restrict the access to the newest address which is available using the master object in the network module
 
 class Capture(db.Model):
     """
@@ -235,11 +237,11 @@ class Capture(db.Model):
         #but this way it is easier to read
         return output
 
-    def add_participant(self, ip_address):
+    def add_participant(self, participant):
         """
         Add another participant to this distributed capture as a slave.
         """
-        self.sniffers.append(Sniffer(capture_id=self.id, ip_address=ip_address))
+        self.sniffers.append(Sniffer(capture_id=self.id, device_identifier=participant.get_device_id()))
 
     def __repr__(self):
         return f"Capture('{self.id}', '{self.title}', '{self.date_created}')"

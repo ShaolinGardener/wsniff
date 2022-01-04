@@ -406,7 +406,7 @@ def new_capture():
             cap_data["global_id"] = global_id
             for participant in other_participants:
                 cap_data["channels"] = channel_workloads.pop()
-                resp = requests.post(f"http://{participant}:{PORT_SLAVE}{url_for('create_local_capture')}", json=cap_data)
+                resp = requests.post(f"http://{participant.get_ip_address()}:{PORT_SLAVE}{url_for('create_local_capture')}", json=cap_data)
                 if resp.status_code != 200:
                     #TODO: here an undo of adding all previous local captures would be necessary
                     print(data)
@@ -417,7 +417,7 @@ def new_capture():
             
             #start the local captures on the other nodes
             for participant in other_participants:
-                resp = requests.get(f"http://{participant}:{PORT_SLAVE}{url_for('start_global_capture', global_id=global_id)}")
+                resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}{url_for('start_global_capture', global_id=global_id)}")
                 if resp.status_code != 200:
                     #TODO: here an undo would be necessary
                     print(resp.json().get("message", "Error occured"))
@@ -589,23 +589,24 @@ def capture_stop(id):
         return redirect(url_for("home"))
 
     if cap.is_distributed:
-        other_participants = cap.sniffers
+        other_sniffers = cap.sniffers
 
         global_id = cap.global_id
 
         #stop local captures that belong to this (distributed) global capture
-        for participant in other_participants:
-            resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('stop_global_capture', global_id=global_id)}")
+        for sniffer in other_sniffers:
+            participant = network.get_master().get_device(sniffer.device_identifier)
+            resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('stop_global_capture', global_id=global_id)}")
             data = resp.json()
             msg = data.get("message", "Error occured")
             if resp.status_code != 200:
                 #todo: some kind of recovery
-                flash(f"Error stopping capture on device {participant.ip_address}: {msg}", "danger")
+                flash(f"Error stopping capture on device {sniffer.device_identifier}: {msg}", "danger")
                 return redirect(url_for("home"))
         #TODO: stop local master capture
 
         #then collect and integrate the data on the master node
-        for participant in other_participants:
+        for participant in other_sniffers:
             #just for testing:
             continue
 
@@ -697,22 +698,22 @@ def collect_global_capture(global_id: str):
     if cap is None:
         return jsonify({'message': f'Capture with global id "{global_id}" does not exist.'}), 400 
 
-    other_participants = cap.sniffers
-    for participant in other_participants:
-        resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('collect_local_capture', global_id=global_id)}")
+    other_sniffers = cap.sniffers
+    for sniffer in other_sniffers:
+        participant = network.get_master().get_device(sniffer.device_identifier)
+        resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('collect_local_capture', global_id=global_id)}")
         data = resp.json()
         msg = data.get("message", "Error occured")
         if resp.status_code != 200:
             #todo: some kind of recovery
-            flash(f"Error collecting data on device {participant.ip_address}: {msg}", "danger")
+            flash(f"Error collecting data on device {participant.get_device_id()}: {msg}", "danger")
             return redirect(url_for("home"))
         else:
-            print(f"[+] {participant.ip_address}: {msg}")
+            print(f"[+] <{participant.get_device_id()}>: {msg}")
  
         #else (received data of this local capture)
         #how we need to integrate the data depends on the capture type
         if isinstance(cap, FullCapture):
-            #TODO: we want a seperate file for every channel
             #get filename and the encoded content of the .pcap file 
             filename = data.get("captured_data").get("filename")
             file_path = os.path.join(cap.get_dir_path(), filename)
@@ -723,7 +724,7 @@ def collect_global_capture(global_id: str):
             try:
                 file = open(file_path, "wb")
                 file.write(captured_data)
-                print(f"[+] Wrote data of {participant.ip_address}")
+                print(f"[+] Wrote data of {participant.get_device_id()}")
             except Exception as e:
                 print(f"[-] Error writing data: {e}")
         elif isinstance(cap, Map):
@@ -736,7 +737,7 @@ def collect_global_capture(global_id: str):
                     db.session.add(d)
                     db.session.commit()
                 except Exception as e:
-                    print(f"[-] Error adding discovery from {participant.ip_address}: {e}")
+                    print(f"[-] Error adding discovery from {participant.get_device_id()}: {e}")
         else:
             #this case is already handled in collect_local_capture (and is caught above when handling the HTTP response)
             pass
@@ -749,18 +750,18 @@ def collect_global_capture(global_id: str):
         cap.add_channels(channels)
 
         #delete the data on the node we just retrieved it from
-        resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
+        resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
         data = resp.json()
         msg = data.get("message", "Error occured")
         if resp.status_code != 200:
             #undo all previous deletions to remain in a consistent state
             db.session.rollback()
-            flash(f"Error deleting data on device {participant.ip_address}: {msg}", "danger")
+            flash(f"Error deleting data on device <{participant.get_device_id()}>: {msg}", "danger")
             return redirect(url_for("home"))
         else:
             #actually update channel list
             db.session.commit()
-            print(f"[+] {participant.ip_address}: {msg}") 
+            print(f"[+] <{participant.get_device_id()}>: {msg}") 
     
     
     #now that all information is stored on this node, this has become a real local capture
@@ -794,12 +795,14 @@ def collect_local_capture(global_id: str):
     captured_data = None
     if isinstance(cap, FullCapture):
         pcap_filepath = os.path.join(cap.get_dir_path(), "cap.pcap")
+        #to make sure the file has a unique name on the master node, just use the device id of this sniffer
+        new_filename = Device.query.first().device_identifier + ".pcap"
         with open(pcap_filepath, "rb") as file:
             file_content = file.read()
             #create base 64 string representation of the file 
             encoded_content = base64.b64encode(file_content).decode("utf-8")
             captured_data = {
-                "filename": "todo",
+                "filename": new_filename,
                 "encoded_content": encoded_content
             }
     elif isinstance(cap, Map):
@@ -898,19 +901,20 @@ def capture_delete(id: int):
     
     if cap.is_distributed:
         #delete data on other nodes
-        other_participants = cap.sniffers
+        other_sniffers = cap.sniffers
         global_id = cap.global_id
-        for participant in other_participants:
-            resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
+        for sniffer in other_sniffers:
+            participant = network.get_master().get_device(sniffer.device_identifier)
+            resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
             data = resp.json()
             msg = data.get("message", "Error occured")
             if resp.status_code != 200:
                 #undo all previous deletions to remain in a consistent state
                 db.session.rollback()
-                flash(f"Error deleting data on device {participant.ip_address}: {msg}", "danger")
+                flash(f"Error deleting data on device <{participant.get_device_id()}>: {msg}", "danger")
                 return redirect(url_for("home"))
             else:
-                print(f"[+] {participant.ip_address}: {msg}")
+                print(f"[+] <{participant.get_device_id}>: {msg}")
 
     #delete local capture on this node
     resp = requests.get(f"http://localhost:80/{url_for('delete_local_capture', id=id, id_type='local_id')}")
@@ -1306,7 +1310,7 @@ def get_connected_devices():
     """
     Look for other wsniff devices that are trying to connect.
     """
-    connected = network.get_master().get_connected_devices()
+    connected = list(map(lambda participant: participant.get_dict(), network.get_master().get_connected_devices()))
     return jsonify({'connected_devices': connected})
 
 @app.route("/devices/search")

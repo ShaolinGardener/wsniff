@@ -6,7 +6,6 @@ from flask_login import LoginManager
 import os
 from website.oui import load_local_oui
 import display.display as display
-import website.network as network
 from website.settings import ROLE
 
 
@@ -52,6 +51,8 @@ def setup():
     #'PRAGMA foreign_keys = ON;' EVERY time you connect to your sqlite db
     db.session.execute('PRAGMA foreign_keys = ON;')
     db.session.commit()
+
+    import website.network as network
 
     #if this is a slave, wait till a connection has been established
     if ROLE == "SLAVE":

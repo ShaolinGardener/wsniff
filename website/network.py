@@ -2,36 +2,137 @@ import time
 import socket
 from threading import Thread, Event
 from enum import Enum
+import json
 
 from website.settings import ROLE, PORT_SLAVE
 import website.interfaces as interfaces
+from website.models import Device
 
 UDP_PORT = PORT_SLAVE
 IP_BROADCAST = "255.255.255.255"
 
-#packets
-REQ_TO_CONNECT = "request to connect"
-CONNECTION_DETAILS = "master reply"
-END = "end"
+
+class Packet():
+    """
+    Packet class used for sending messages between sniffers when executing a network discovery.
+    """
+
+    #packet types
+    class Type():
+        """
+        Packet types
+        """
+        REQ_TO_CONNECT = "request to connect"
+        CONNECTION_DETAILS = "master reply"
+        END = "end"
+
+    def __init__(self, type, body: dict = {}):
+        """
+        type: the packet type
+        body: other information that should be part of this packet encapsulated as a dictionary
+        """
+        self.content = dict()
+        self.content["type"] = type
+        self.content.update(body)
+
+    def decode(binary_input):
+        """
+        Used after receiving a packet from another participant at the lowest level.
+        Creates a packet object.
+
+        binary_input: the packet as received in its binary form 
+        """
+        
+        received = json.loads(binary_input.decode('utf-8'))
+        p_type = received.get("type")
+        return Packet(p_type, received)
+
+    def encode(self):
+        """
+        Binary representation of this packet which can be sent over a socket.
+        """
+        return json.dumps(self.content).encode('utf-8')
+
+
+    def get_type(self) -> str:
+        """
+        Returns the packet type of this packet.
+        """
+        return self.content["type"] 
+    
+    def get(self, packet_field: str):
+        """
+        Return this field of the packet. If it does not exist, throw an exception.
+        """
+        field_content = self.content.get(packet_field)
+        if field_content is None:
+            raise Exception(f"This packet does not have a field '{packet_field}'")
+        return field_content
+    
+    def __repr__(self) -> str:
+        return str(self.content)
+    
+
+class Participant():
+    """
+    Encapsulates the information about a sniffer that forms a logical unit with other devices.
+    """
+    def __init__(self, device_id, ip_address):
+       self.ip_address = ip_address 
+       self.device_id = device_id
+    
+    def get_ip_address(self):
+        return self.ip_address
+
+    def set_ip_address(self, ip_address):
+        self.ip_address = ip_address
+
+    def get_device_id(self):
+        return self.device_id
+
+    def get_dict(self):
+        """
+        Return this participant object as a dictionary.
+        """
+        return {
+            'device_id': self.device_id,
+            'ip_address': self.ip_address
+        }
+
 
 class Master():
-    def __init__(self):
-        #IP addresses of clients that want to become a slave
-        #but that do not know the master's IP address yet
-        self.clients_waiting = []
 
-        #IP adresses of all fully connected clients
-        self.clients_established = []
+    def __init__(self):
+        #dictionary of clients that want to become a slave
+        #but that do not know the master's IP address yet
+        #structure: {device_identifier: participant_object}
+        self.clients_waiting = {} 
+
+        #dicttionary of all fully connected participants
+        #structure: {device_identifier: participant_object} 
+        self.clients_established = {}
 
         #Thread used to look for other wsniff devices
         self.discovery_thread = None
         self.discovery_running = Event()
 
+    def get_device(self, device_id: str):
+        """
+        Searches for a slave with the given device_id and returns its IP address.
+        Throws an exception in case there is no participant with this device_id
+        """
+        for participant in self.get_connected_devices():
+            if participant.get_device_id() == device_id:
+                return participant
+        
+        raise Exception(f"There is no participant with device id {device_id}")
+
+
     def get_connected_devices(self):
         """
-        Returns a list of IP addresses of all devices that are connected to this master node.
+        Returns a list of all participants that are connected to this master node.
         """
-        return self.clients_established
+        return list(self.clients_established.values())
 
     def get_pending_devices(self):
         """
@@ -60,42 +161,51 @@ class Master():
         while self.discovery_running.is_set():
             try:
                 data, addr = sock.recvfrom(1024)
-                msg = data.decode("utf-8")
+
+                packet = Packet.decode(data)
+                packet_type = packet.get_type()
                 ip_client = addr[0]
 
                 #client wants to connect - but does not know the IP address of the master
-                if msg == REQ_TO_CONNECT:
+                if packet_type == Packet.Type.REQ_TO_CONNECT:
                     #new client
-                    if ip_client not in self.clients_waiting:
-                        self.clients_waiting.append(ip_client)
-                        print(f"[*] {ip_client} requested to become a slave.")
+                    #get the device id of this new client
+                    device_id = packet.get("device_id")
+                    if device_id not in self.clients_waiting:
+                        new_participant = Participant(device_id, ip_client)
+                        self.clients_waiting[device_id] = new_participant
+                        print(f"[*] {device_id} requested to become a slave.")
 
                     #client already made request, but CONNECTION DETAIL reply packet got lost (so he asked again)
                     else:
                         #just resend connection details reply packet
                         pass
 
-                    #send connection detials reply to connect with IP of master
-                    sock.sendto(str.encode(CONNECTION_DETAILS), (ip_client, UDP_PORT))
+                    #send connection details reply to connect with IP of master
+                    sock.sendto(Packet(Packet.Type.CONNECTION_DETAILS).encode(), (ip_client, UDP_PORT))
 
 
                 #ACK that client received connection details packet (including IP address of server)
                 #this means both participants can now communicate directly with each other
-                elif msg == END:
+                elif packet_type == Packet.Type.END:
                     #first time we receive this from the client - we have his information
                     #and now we know he also has our information
-                    if ip_client in self.clients_waiting:
+
+                    device_id = packet.get("device_id")
+                    if device_id in self.clients_waiting:
                         #move client to list of slaves (with which a conenction has been established)
-                        self.clients_waiting.remove(ip_client)
+                        participant = self.clients_waiting.pop(device_id)
 
                         #this should normally be the case
                         if ip_client not in self.clients_established:
-                            self.clients_established.append(ip_client)
+                            self.clients_established[device_id] = participant
                         #the only exception would be a client that executes a network discovery a second time
-                        #meaning he is already in the list of slaves - then prevent duplicates
+                        #meaning he is already in the list of participants - then update his IP record since it 
+                        #might be that its IP address changed
                         else:
-                            pass
-                        print(f"[+] Connection established with [{ip_client}]")
+                            self.clients_established[device_id].set_ip_address(participant.get_ip_address())
+                            print(f"[*] Update IP address of [{device_id}]")
+                        print(f"[+] Connection established with [{device_id}]")
                         for client in self.clients_established:
                             print(client)
 
@@ -105,11 +215,11 @@ class Master():
                     else:
                         pass
 
-                    sock.sendto(str.encode(END, "utf-8"), (ip_client, UDP_PORT))
+                    sock.sendto(Packet(Packet.Type.END).encode(), (ip_client, UDP_PORT))
 
-                #other msg - should not occur
+                #other packet - should not occur
                 else:
-                    print(f"[!] Received message from [{ip_client}]: {msg}")
+                    print(f"[!] Received unknown packet from [{ip_client}]: {packet}")
             
             except socket.timeout as e:
                 pass
@@ -164,7 +274,7 @@ def get_master():
     return _master
 
 
-class Slave(Thread):
+class Slave():
 
     class State(Enum):
         INIT = 1
@@ -174,6 +284,8 @@ class Slave(Thread):
     def __init__(self):
         self.ip_master = None
         self.state = Slave.State.INIT
+
+        self.device_id = Device.query.first().device_identifier
 
     def get_master_ip(self):
         return self.ip_master
@@ -195,7 +307,8 @@ class Slave(Thread):
                     broadcast_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                     broadcast_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-                    broadcast_sock.sendto(str.encode(REQ_TO_CONNECT, "utf-8"), (IP_BROADCAST, UDP_PORT))
+                    packet_body = {"device_id": self.device_id}  
+                    broadcast_sock.sendto(Packet(Packet.Type.REQ_TO_CONNECT, packet_body).encode(), (IP_BROADCAST, UDP_PORT))
                     broadcast_sock.close()
 
                     #if you try to use broadcast_sock for receiving that won't work because using SO_BROADCAST=1
@@ -206,16 +319,16 @@ class Slave(Thread):
                     sock.bind(("0.0.0.0", UDP_PORT))
 
                     data, addr = sock.recvfrom(1024)
-                    msg = data.decode("utf-8")
+                    packet = Packet.decode(data)
                     
-                    if msg == CONNECTION_DETAILS:
+                    if packet.get_type() == Packet.Type.CONNECTION_DETAILS:
                         #now we know the master's IP address and can switch to the next state
                         self.ip_master = addr[0]
                         print(f"[+] Found master: [{self.ip_master}].")
                         self.state = Slave.State.MASTER_KNOWN
                     else:
                         #remain in the same state
-                        print(f"[!] Got some unintended message: {msg}")
+                        print(f"[!] Got some unintended packet: {packet}")
                     sock.close()
                     
 
@@ -228,20 +341,21 @@ class Slave(Thread):
                     sock.settimeout(2)
                     sock.bind(("0.0.0.0", UDP_PORT))
 
-                    sock.sendto(str.encode(END), (self.ip_master, UDP_PORT))
+                    packet_body = {"device_id": self.device_id}   
+                    sock.sendto(Packet(Packet.Type.END, packet_body).encode(), (self.ip_master, UDP_PORT))
 
                     #now make sure the server received that by waiting for an ACK
                     data, addr = sock.recvfrom(1024)
-                    msg = data.decode("utf-8")
+                    packet = Packet.decode(data)
 
                     #this means the server has received our END packet and therefore
                     #knows that we are ready
-                    if msg == END:
+                    if packet.get_type() == Packet.Type.END:
                         self.state = Slave.State.CONNECTION_ESTABLISHED
                         print(f"[+] Connection established.")
                         #we could also do a break directly here but I think it is a cleaner implementation of the state machine
                     else:
-                        print(f"[!] Got some unintended message: {msg}")
+                        print(f"[!] Got some unintended packet: {packet}")
                     sock.close()
 
                 #network discovery is over - both master and slave have the information they need for communication
