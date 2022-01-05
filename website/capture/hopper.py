@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from threading import Thread, Event, Lock
+from threading import Thread, Event as ThreadEvent, Lock as ThreadLock
+from multiprocessing import Lock as ProcessLock
 import random
 import time
 from enum import Enum
@@ -20,7 +21,7 @@ class _ChannelStatistics():
         #should be a sorted list since that is expected by some strategies
         self.channels = sorted(channels)
         self.stats = dict()
-        self.lock = Lock()
+        self.lock = ProcessLock()
 
     def num_channels(self):
         return len(self.channels)
@@ -253,7 +254,7 @@ class Hopper(Thread):
         self.hop_strategy = hop_strategy
         self.hop_strategy.set_num_interfaces(len(interfaces))
 
-        self.stop = Event()
+        self.stop = ThreadEvent()
 
         #init channel stats
         self.channel_stats = _ChannelStatistics(channels)

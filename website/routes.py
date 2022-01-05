@@ -833,7 +833,7 @@ def capture_get(id):
         flash(str(e), "danger")
         return redirect(url_for("home"))
     
-    return jsonify(id=c.id, num_packets=c.num_packets)
+    return jsonify(id=c.id, num_packets=c.get_num_packets())
 
 @app.route("/capture/<int:id>/show")
 def capture_show(id):

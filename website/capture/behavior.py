@@ -1,8 +1,3 @@
-from abc import ABC, abstractmethod
-from threading import Thread, Event, Lock
-from time import sleep, time
-from datetime import datetime
-
 from website import app, db
 from website.models import Discovery, FullCapture, Map
 from website.interfaces import Interface
@@ -15,6 +10,11 @@ from website.api import upload_discovery
 import display.display as display
 
 import os
+from abc import ABC, abstractmethod
+from threading import Thread, Event as ThreadEvent, Lock as ThreadLock
+from multiprocessing import Lock as ProcessLock, Manager
+from time import sleep, time
+from datetime import datetime
 
 from scapy.all import *
 
@@ -36,10 +36,10 @@ class CaptureBehavior(ABC):
         self.options = options
 
     @abstractmethod
-    def handle_packet(self, frame):
+    def process_packet(self, frame):
         """
-        Be aware that if using multiple interfaces, this method will be called concurrently.
-        So make sure it is implemented thread-safe in your concrete Behavior classes.
+        This method will be given all raw packets, one at a time.
+        Here, all the processing of the packet should take place.
         """
         pass
 
@@ -54,7 +54,8 @@ class CaptureBehavior(ABC):
     
     def stop_capture(self):
         """
-        called after last frame has been captured
+        Work that should be done after the last frame has been captured
+        AND processed.
         """
         pass
 
@@ -64,7 +65,7 @@ class TestBehavior:
     do not capture any packets
     """ 
     
-    def handle_packet(self, frame):
+    def process_packet(self, frame):
         pass
 
 
@@ -78,12 +79,10 @@ class CaptureAllBehavior(CaptureBehavior):
         cap: the database object representing this capture
             Stores all the information needed for this capture behavior
         """
-        #TODO: enable support for multiple channels
         self.channels = cap.get_channels()
 
         self.gps_tracking = cap.gps_tracking
         self.dir_path = cap.get_dir_path()
-        self.lock = Lock()
 
     def start_capture(self):
         #set all interfaces to the specified channel
@@ -112,11 +111,8 @@ class CaptureAllBehavior(CaptureBehavior):
         if self.gps_tracking:
             self.gps_route.stop_capture()
 
-    def handle_packet(self, frame):
-        self.lock.acquire()
+    def process_packet(self, frame):
         self.packet_writer.write(frame)
-        self.capture.num_packets += 1
-        self.lock.release()
         
 #BEGIN OF MapAccessPointsBehavior
 class _AccessPoint():
@@ -127,7 +123,6 @@ class _AccessPoint():
             self.encryption = encryption
             self.signal_strength = 0
 
-            self.lock = Lock()
             #gps coordinates
             self.lat, self.lon = gps.get_gps_data()
 
@@ -139,12 +134,10 @@ class _AccessPoint():
         def refresh(self, signal_strength=0):
             #only store new gps coordinates if signal is stronger than last time
             if signal_strength > self.signal_strength:
-                self.lock.acquire()
                 self.t_last_seen = time.time()
                 self.signal_strength = signal_strength
                 #get new gps coordinates and update them
                 self.lat, self.lon = gps.get_gps_data()
-                self.lock.release()
 
         def __str__(self):
             return f"[{self.bssid}] {self.ssid} on channel {self.channel}"
@@ -162,8 +155,8 @@ class MapAccessPointsBehavior(CaptureBehavior):
         #bssid as unique identifier, AccessPoint object as value
         # bssid: str -> ap: AcessPoint
         self.aps = dict() #all APs that are uncovered 
-        self._running = Event() #used to synchronize
-        self.lock = Lock() 
+
+        self._running = ThreadEvent() #used to synchronize
 
         self.map = map
 
@@ -224,10 +217,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
                     del self.aps[bssid]
 
 
-    def handle_packet(self, frame):
-        self.lock.acquire()
-        self.capture.num_packets += 1
-        self.lock.release()
+    def process_packet(self, frame):
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
@@ -245,17 +235,10 @@ class MapAccessPointsBehavior(CaptureBehavior):
                 if frame.haslayer(RadioTap):
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
-                #checking and adding ap to dict has to be an atomic action
-                #FIXME: we are doing a double check here to increase performance,
-                #however if the condition evaluates to False here, the else branch won't
-                #be executed
-                self.lock.acquire()
-                if bssid not in self.aps:
-                    self.aps[bssid] = ap
-                    self.num_aps += 1
-                    #update channel stats of hopper
-                    self.hopper.increment_ap_observations(channel)
-                self.lock.release()
+                self.aps[bssid] = ap
+                self.num_aps += 1
+                #update channel stats of hopper
+                self.hopper.increment_ap_observations(channel)
             else: #acess point already in dict -> refresh AP to prevent it from getting deleted
                 #acess point already in dict -> refresh AP to prevent it from getting deleted
                 if not frame.haslayer(RadioTap): 
@@ -292,8 +275,7 @@ class OnlineMapBehavior(CaptureBehavior):
         #bssid as unique identifier, AccessPoint object as value
         #bssid: str -> ap: AcessPoint
         self.aps = dict() #all APs that are uncovered 
-        self._running = Event() #used to synchronize
-        self.lock = Lock() 
+        self._running = ThreadEvent() #used to synchronize
 
         self.map = map
 
@@ -353,10 +335,7 @@ class OnlineMapBehavior(CaptureBehavior):
                     del self.aps[bssid]
 
 
-    def handle_packet(self, frame):
-        self.lock.acquire()
-        self.capture.num_packets += 1
-        self.lock.release()
+    def process_packet(self, frame):
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
@@ -374,15 +353,10 @@ class OnlineMapBehavior(CaptureBehavior):
                 if frame.haslayer(RadioTap):
                     ap.signal_strength = frame[RadioTap].dBm_AntSignal
 
-                #FIXME: if the check evaluates to False, the else branch wont be executed
-                #although it should
-                self.lock.acquire()
-                if bssid not in self.aps:
-                    self.aps[bssid] = ap
-                    self.num_aps += 1
-                    #update channel stats of hopper
-                    self.hopper.increment_ap_observations(channel)
-                self.lock.release() 
+                self.aps[bssid] = ap
+                self.num_aps += 1
+                #update channel stats of hopper
+                self.hopper.increment_ap_observations(channel)
             else: #acess point already in dict -> refresh AP to prevent it from getting deleted
                 #acess point already in dict -> refresh AP to prevent it from getting deleted
                 if not frame.haslayer(RadioTap): 
