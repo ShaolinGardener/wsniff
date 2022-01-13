@@ -1,9 +1,12 @@
 import sys
 from enum import Enum
 import subprocess
+import logging
 #using this instead of directly list[...] since there is only Python 3.7 on a RPi by default
 from typing import List
 
+#init logger
+_logger = logging.getLogger("website.interfaces")
 
 class Mode(Enum):
         MANAGED = 1
@@ -62,7 +65,7 @@ class Interface:
         subprocess.run(self.str_monitor_enable, shell=True, check=True)
         self.mode = Mode.MONITOR
         self.current_name = self.mon_name
-        print(f"[+] Activated monitor mode for {self.name}")
+        _logger.info("[+] Activated monitor mode for %s", self.name)
 
     def disable_monitor_mode(self):
         """
@@ -73,7 +76,7 @@ class Interface:
         subprocess.run(self.str_monitor_disable, shell=True, check=True)
         self.mode = Mode.MANAGED
         self.current_name = self.name
-        print(f"[+] Deactivated monitor mode for {self.name}")
+        _logger.info("[+] Deactivated monitor mode for %s", self.name)
  
     def get_channels(self):
         interface = self.current_name
@@ -84,7 +87,7 @@ class Interface:
             res = proc_res.stdout.decode('utf-8')
             channels = list(map(lambda line: int(line.split(' ')[-4]), res.split('\n')[1:-3]))
         except subprocess.CalledProcessError as e:
-            print(f'[-] Could not determine available channels for interface {interface}')
+            _logger.exception(f'[-] Could not determine available channels for interface %s', interface)
         return channels 
     
     def get_channel_string(self):

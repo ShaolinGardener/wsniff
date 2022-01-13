@@ -2,6 +2,7 @@ import sys
 import io, json, re
 import serial
 from datetime import datetime
+import logging
 
 import pynmea2
 
@@ -9,6 +10,8 @@ from time import sleep, mktime, time
 from website.settings import GPS_SERIAL, GPS_BAUD_RATE
 
 from threading import Thread, Event, Lock
+
+_logger = logging.getLogger("website.gps")
 
 #enable basic testing on other OS than linux
 if sys.platform.startswith('linux'):
@@ -20,9 +23,9 @@ if sys.platform.startswith('linux'):
             ser = serial.Serial(GPS_SERIAL, GPS_BAUD_RATE, timeout=5.0)
         except serial.serialutil.SerialException as e:
             #if the serial port that is specified (GPS_SERIAL) cannot be opened
-            print('[-] Please specify the real serial port of your GPS module ')
-            print('in the settings (GPS_SERIAL). If you do not want to use a GPS module,')
-            print('just set it to /dev/null')
+            _logger.critical('[-] Please specify the real serial port of your GPS module ')
+            _logger.critical('in the settings (GPS_SERIAL). If you do not want to use a GPS module,')
+            _logger.critical('just set it to /dev/null')
             sys.exit(1)
 
         #nmea protokoll def. <CR><LF> als ende zeile -> TextIOWrapper wandelt das automatisch in \n um
@@ -32,7 +35,7 @@ else:
     #you will only be able to test GPS on linux
     sio = None
 
-print("[+] Initializing gps module")
+_logger.info("[+] Initializing gps module")
 
 
 class GPSRoute():
@@ -70,7 +73,7 @@ class GPSRoute():
         self.t = Thread(target=self._capture, name="gps route tracker")
         self.t.setDaemon(True)
         self.t.start()
-        print(f"[+] GPS Capture '{self.name}'' Started")
+        _logger.info(f"[+] GPS Capture '{self.name}'' Started")
 
     def stop_capture(self):
         self._stop.set()
@@ -78,7 +81,7 @@ class GPSRoute():
 
         #store in file
         self.store_as_file()
-        print(f"[+] GPS Capture '{self.name}'' Stopped")
+        _logger.info(f"[+] GPS Capture '{self.name}'' Stopped")
 
     #TODO: write to file during capture (e.g. when calling _add_waypoint)
     def store_as_file(self):
@@ -211,10 +214,10 @@ def _read_data():
             try:
                 msg = pynmea2.parse(line)
             except serial.SerialException as e:
-                print('Device error: {}'.format(e))
+                _logger.exception('Device error:')
                 continue
             except pynmea2.ParseError as e:
-                print('Parse error: {}'.format(e))
+                _logger.exception('Parse error:')
                 continue
 
             #only parse nmea messages that comprise GPS information
@@ -235,23 +238,23 @@ def _read_data():
                 else:
                     _gps_available = False
         except serial.SerialException as e:
-            print(f"Device error: {e}")
+            _logger.exception(f"Device error:")
             break
         except ChecksumException as e:
-            print(f"Parse error: {e}")
+            _logger.exception(f"Parse error:")
             continue
         except UnicodeDecodeError as e:
-            print(f"Unicode error: {e}")
+            _logger.exception(f"Unicode error:")
             continue
 
 gps_thread = None
 def start_gps_tracking():
     global gps_thread #because new thread instance is assigned to this variable
     if gps_is_running():
-        print("[*] Tried starting gps thread although there is already one running.")
+        _logger.warning("[*] Tried starting gps thread although there is already one running.")
     _stop_event.clear()
 
-    print("[*] Starting GPS Thread")
+    _logger.info("[*] Starting GPS Thread")
     gps_thread = Thread(target=_read_data, name="gps tracker")
     gps_thread.daemon = True
     gps_thread.start()
@@ -260,7 +263,7 @@ def stop_gps_tracking():
     global _gps_available
     _stop_event.set()
     gps_thread.join()
-    print("[+] Stopped GPS Thread")
+    _logger.info("[+] Stopped GPS Thread")
     _gps_available = False
 
 def gps_is_running():

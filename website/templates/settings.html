@@ -56,6 +56,12 @@
   <p class="mt-2"><small>Your current IP address in the network which you are connected to is: <b>{{ ip_address }}</b></small></p>
 </div>
 
+<!-- download sniffer log -->
+<div class="mt-4 text-justify">
+  <h2>Logging</h2>
+  <p>Download the log of this sniffer - including all interactions of the user and the process of distributed captures.</p>
+  <a class="btn btn-outline-primary" href="{{ url_for('download_logfile') }}">Download log</a>
+</div>
 
 <!-- OUI -->
 <div class="mt-4 text-justify">

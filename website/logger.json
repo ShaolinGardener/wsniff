@@ -1,0 +1,67 @@
+{
+    "version": 1,
+    "formatters": {
+      "simple": {
+        "format": "%(asctime)s - %(message)s",
+        "datefmt": "%y%j-%H%M%S"
+      },
+      "detailed": {
+        "style": "{",
+        "format": "[{asctime}] - {levelname}: {name} {module} - {message}"
+      },
+      "debug": {
+        "style": "{",
+        "format": "[{asctime}] - {levelname}: {name} {module}- file:{pathname} - line:{lineno} - message: {message}"
+      }
+    },
+    "handlers": {
+      "debug_console": {
+        "class": "logging.StreamHandler",
+        "level": "DEBUG",
+        "formatter": "detailed",
+        "stream": "ext://sys.stderr"
+      },
+      "store": {
+        "class": "logging.handlers.TimedRotatingFileHandler",
+        "level": "INFO",
+        "formatter": "detailed",
+        "filename": "/var/log/wsniff.log",
+        "when": "m",
+        "interval": 24,
+        "backupCount": 1
+      }
+    },
+    "loggers": {
+      "website": {
+        "handlers": ["store"],
+        "level": "DEBUG"
+      },
+      "website.routes": {
+        "level": "DEBUG"
+      },
+      "website.capture": {
+        "level": "DEBUG"
+      },
+      "website.api": {
+        "level": "DEBUG"
+      },
+      "website.aps": {
+        "level": "DEBUG"
+      },
+      "website.gps": {
+        "level": "DEBUG"
+      },
+      "website.interfaces": {
+        "level": "DEBUG"
+      },
+      "website.network": {
+        "level": "DEBUG"
+      },
+      "website.oui": {
+        "level": "DEBUG"
+      },
+      "website.server": {
+        "level": "DEBUG"
+      }
+    }
+  }

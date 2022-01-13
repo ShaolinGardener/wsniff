@@ -3,14 +3,19 @@ import socket
 from threading import Thread, Event
 from enum import Enum
 import json
+import logging
 
 from website.settings import ROLE, PORT_SLAVE
 import website.interfaces as interfaces
 from website.models import Device
 
+
+#init logger
+_logger = logging.getLogger("website.network")
+
+
 UDP_PORT = PORT_SLAVE
 IP_BROADCAST = "255.255.255.255"
-
 
 class Packet():
     """
@@ -174,7 +179,7 @@ class Master():
                     if device_id not in self.clients_waiting:
                         new_participant = Participant(device_id, ip_client)
                         self.clients_waiting[device_id] = new_participant
-                        print(f"[*] {device_id} requested to become a slave.")
+                        _logger.info(f"[*] %s requested to become a slave.", device_id)
 
                     #client already made request, but CONNECTION DETAIL reply packet got lost (so he asked again)
                     else:
@@ -204,8 +209,9 @@ class Master():
                         #might be that its IP address changed
                         else:
                             self.clients_established[device_id].set_ip_address(participant.get_ip_address())
-                            print(f"[*] Update IP address of [{device_id}]")
-                        print(f"[+] Connection established with [{device_id}]")
+                            _logger.info("[*] Update IP address of [%s]", device_id)
+                        _logger.info("[+] Connection established with [%s]", device_id)
+                        print("Current slaves: ")
                         for client in self.clients_established:
                             print(client)
 
@@ -219,7 +225,7 @@ class Master():
 
                 #other packet - should not occur
                 else:
-                    print(f"[!] Received unknown packet from [{ip_client}]: {packet}")
+                    _logger.warning("[!] Received unknown packet from [%s]: %s", ip_client, str(packet))
             
             except socket.timeout as e:
                 pass
@@ -244,7 +250,7 @@ class Master():
         self.discovery_thread = Thread(target=self.discover, name="network_discovery")
         self.discovery_thread.daemon = True
         self.discovery_thread.start()
-        print("[+] Started network discovery")
+        _logger.info("[+] Started network discovery")
 
     def end_discovery(self):
         """
@@ -257,7 +263,7 @@ class Master():
         self.discovery_running.clear()
         #wait for the thread to finish its work
         self.discovery_thread.join()
-        print("[+] Server ended network discovery")
+        _logger.info("[+] Server ended network discovery")
 
 
 #public access
@@ -324,11 +330,11 @@ class Slave():
                     if packet.get_type() == Packet.Type.CONNECTION_DETAILS:
                         #now we know the master's IP address and can switch to the next state
                         self.ip_master = addr[0]
-                        print(f"[+] Found master: [{self.ip_master}].")
+                        _logger.info("[+] Found master: [%s].", self.ip_master)
                         self.state = Slave.State.MASTER_KNOWN
                     else:
                         #remain in the same state
-                        print(f"[!] Got some unintended packet: {packet}")
+                        _logger.warning("[!] Got some unintended packet: %s", str(packet))
                     sock.close()
                     
 
@@ -352,10 +358,10 @@ class Slave():
                     #knows that we are ready
                     if packet.get_type() == Packet.Type.END:
                         self.state = Slave.State.CONNECTION_ESTABLISHED
-                        print(f"[+] Connection established.")
+                        _logger.info("[+] Connection established.")
                         #we could also do a break directly here but I think it is a cleaner implementation of the state machine
                     else:
-                        print(f"[!] Got some unintended packet: {packet}")
+                        _logger.warning("[!] Got some unintended packet: %s", str(packet))
                     sock.close()
 
                 #network discovery is over - both master and slave have the information they need for communication
@@ -367,6 +373,7 @@ class Slave():
             #we have to repeat this step of the network discovery
             except socket.timeout as e:
                 #if broadcast connection request or connection details reply packet are lost, you have to repeat the request
+                #logging this does not really make sense
                 print("[*] Looking for master ...")
                 continue
     

@@ -1,5 +1,9 @@
 import os.path
+import logging
 import urllib.request as request
+
+#init logger
+_logger = logging.getLogger("website.oui")
 
 #used in own oui.txt file to separate identifying part of the mac address and the organization
 SEPARATOR = "\t"
@@ -16,7 +20,7 @@ def download(to_directory: str):
     URL = "http://standards-oui.ieee.org/oui.txt"
     req = request.Request(URL)
     
-    print("[+] Starting to download and parse oui.txt")
+    _logger.info("[+] Starting to download and parse oui.txt")
     out = None
     count = 0
     try:
@@ -35,7 +39,6 @@ def download(to_directory: str):
             mac, organization = line.split("(hex)")
             mac, organization = mac.strip(), organization.strip() #remove whitespace like tabs
             
-            #print(f"{mac} -> {organization}")
             out.write(f"{mac}{SEPARATOR}{organization}\n") #e.g. one line could be:40-55-82    Nokia
             count += 1
     except Exception as e:
@@ -45,11 +48,11 @@ def download(to_directory: str):
         if out: out.close()
     
     if count != 0:
-        print("[+] Update successfull")
-        print(f"Got {count} mappings.")
+        _logger.info("[+] Update successfull")
+        _logger.info("Got %d mappings.", count)
 
 def load_local_oui(directory_path: str):
-    print("[*] Trying to load local oui")
+    _logger.info("[*] Trying to load local oui")
     fname = os.path.join(directory_path, OUI_FILENAME)
     file = None
     try:
@@ -61,7 +64,7 @@ def load_local_oui(directory_path: str):
             _table[mac] = organization
             line = file.readline()
     except Exception as e:
-        print(f"[-] Exception when loading local oui: {e}")
+        _logger.exception("[-] Exception when loading local oui:")
     finally:
         if file: file.close()
 

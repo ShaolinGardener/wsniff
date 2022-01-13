@@ -1,6 +1,7 @@
 from threading import Thread, Event, Lock
 from time import sleep
 import time
+import logging
 import random, os
 from typing import Dict, List
 
@@ -10,6 +11,8 @@ from website.capture.hopper import Hopper, HoppingStrategy, EvenlyDistributedHop
 
 from scapy.all import *
 
+#init logging 
+_logger = logging.getLogger("website.aps")
 
 class AccessPoint():
 
@@ -189,16 +192,13 @@ def handlePacket(pkt):
         a2 = pkt.getlayer(Dot11).addr2
         a3 = pkt.getlayer(Dot11).addr3
         a4 = pkt.getlayer(Dot11).addr4
-        #print(f"{a1} {a2} {a3} {a4}")
 
         f = Frame(pkt)
-        #print(f)
 
         #von ap to station
         if f.bssid and f.dst != "ff:ff:ff:ff:ff:ff":  #and f.frame_type == Frame.DOT11_FRAME_TYPE_DATA:
             station = f.dst
             ap = f.src
-            #print(f"AP->STA station: {station}")
             if ap not in ap_station_mapper:
                 ap_station_mapper[ap] = set()
             ap_station_mapper[ap].add(station)
@@ -207,7 +207,6 @@ def handlePacket(pkt):
             #TODO: sometimes (control frames) the src is actually an AP although there is no bssid
             station = f.src
             ap = f.dst
-            #print(f"STA->AP station {station}")
             if ap not in ap_station_mapper:
                 ap_station_mapper[ap] = set()
             ap_station_mapper[ap].add(station)

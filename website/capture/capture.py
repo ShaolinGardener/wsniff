@@ -2,6 +2,7 @@ from multiprocessing import Process, Event as ProcessEvent, Value, JoinableQueue
 #using this instead of list[...] since there is only Python 3.7 on a RPi by default
 from typing import List
 import queue
+import logging
 
 from website import app
 from website.interfaces import Interface
@@ -9,6 +10,9 @@ from website.capture.behavior import CaptureBehavior
 
 from scapy.all import *
 
+
+#init logger
+_logger = logging.getLogger("website.capture")
 
 class Capture:
     """
@@ -55,7 +59,7 @@ class Capture:
             try:
                 packet_buffer.put(packet, block=False)
             except queue.Full as e:
-                print(f"[-] Error processing packet: Queue full \n{e}")
+                _logger.exception("[-] Error processing packet: Queue full")
         
         #since scapy expects a callback function with exactly one parameter, we need to return store_packet
         #and can not just use _handle_packet (this is why we have to make use of a nested function)
@@ -119,10 +123,10 @@ class Capture:
             t.daemon = True
             t.start()
             self.capture_processes.append(t)
-            print("[*] Started capture process.")
+            _logger.info("[*] Started capture process.")
 
 
-        print(f"[+] Capture {self.id} Started")
+        _logger.info(f"[+] Capture {self.id} Started")
 
     def stop(self):
         #stop capturing of frames
@@ -131,10 +135,10 @@ class Capture:
 
         for process in self.capture_processes:
             process.join()
-            print("[*] Stopped capture process.")
+            _logger.info("[*] Stopped capture process.")
 
 
-        print(f"[+] Capture {self.id} Stopped")
+        _logger.info(f"[+] Capture {self.id} Stopped")
 
     def get_num_packets(self):
         return self.num_packets.value

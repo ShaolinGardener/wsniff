@@ -15,6 +15,7 @@ from threading import Thread, Event as ThreadEvent, Lock as ThreadLock
 from multiprocessing import Lock as ProcessLock, Manager
 from time import sleep, time
 from datetime import datetime
+import logging
 
 from scapy.all import *
 

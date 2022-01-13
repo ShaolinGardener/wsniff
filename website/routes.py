@@ -28,10 +28,19 @@ import math
 import socket
 import os, shutil
 import subprocess
+import logging
 import json
 from scapy.all import *
 
- 
+
+#init logger
+_logger = logging.getLogger("website.routes")
+
+#we want to log every request which the client sends
+@app.after_request
+def after_request(response):
+    _logger.info('[%s] User: %s - %s %s %s %s', request.remote_addr, current_user.username, request.method, request.scheme, request.full_path, response.status)
+    return response
 
 #alle nicht existenten URLs zur basisseite routen
 @app.route("/<path:path>")
@@ -84,10 +93,12 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         hashed_passw = bcrypt.generate_password_hash(form.password.data).decode("utf-8")
-        user = User(username=form.username.data, password=hashed_passw)
+        username=form.username.data
+        user = User(username=username, password=hashed_passw)
         db.session.add(user)
         db.session.commit()
 
+        _logger.info("[+] A new user with unique username <%s> has been registered.", username)
         flash(f"Your account has been created! You can log in now.", "success")
         return redirect(url_for("login"))
     return render_template("register.html", title="Register", form=form)
@@ -107,6 +118,7 @@ def login():
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             #this sets current_user to user, so we can access all attributes defined in User
             login_user(user, remember=form.remember.data)
+            _logger.info("[*] User with username <%s> logged in.", form.username.data)
             flash("You are logged in!", "success")
 
             #if user tried to access a special page before authenticating, redirect there
@@ -115,6 +127,7 @@ def login():
                 return redirect(next_page)
             return redirect(url_for("home"))
         else:
+            _logger.info("[-] Login with username <%s> failed.", form.username.data)
             flash("Login failed! Please check your username and password!", "danger")
     return render_template("login.html", title="Login", form=form)
 
@@ -124,8 +137,10 @@ def logout():
     """
     Logout user
     """
-    logout_user()
 
+    _logger.info("[*] User %s wants to log out.", current_user.username)
+    logout_user()
+    _logger.info("[*] User is now logged out.")
     flash("You are now logged out!", category="success")
     return redirect(url_for("login"))
 
@@ -155,6 +170,12 @@ def settings():
     ip = get_ip()
     return render_template("settings.html", title="Settings", managed=managed, monitor=monitor, gps_running=gps_running, ip_address=ip)
 
+@app.route("/log/download")
+@login_required
+def download_logfile():
+    _logger.info("[*] Download log file.")
+    return send_from_directory("/var/log/", "wsniff.log", as_attachment=True)
+
 ########################################HARDWARE RELATED#########################################
 
 @app.route("/settings/reboot")
@@ -169,6 +190,7 @@ def reboot():
     #shutdown display
     display.shutdown()
 
+    _logger.info("[*] Initializing reboot ...")
     str_shutdown = "reboot"
     subprocess.run(str_shutdown, shell=True, check=True)
     return render_template("settings.html", title="Settings") #should not be executed
@@ -185,6 +207,7 @@ def shutdown():
     #shutdown display
     display.shutdown()
 
+    _logger.info("[*] Initializing shutdown ...")
     str_shutdown = "shutdown -h now"
     subprocess.run(str_shutdown, shell=True, check=True)
     return render_template("settings.html", title="Settings") #should not be executed
@@ -377,13 +400,16 @@ def new_capture():
         #otherwise display that the capture started successfully
         cap_id = None                                      
         if resp.status_code != 200:
+            _logger.info("[-] Creation of local capture failed: %s", msg)
             flash(msg, "danger")
             return redirect(url_for("home"))
         else:
             cap_id = data.get("cap_id")
+            _logger.info("[+] Created local capture with id %d. Now trying to start it.", cap_id)
         
         #distributed capture
         if is_distributed:
+            _logger.info("[*] Capture with id [%d] is distributed, so starting it involves other nodes.", cap_id)
             cap: Capture = Capture.query.get(cap_id)
             #if this is a distributed capture, store the participating nodes
             other_participants = network.get_master().get_connected_devices()
@@ -407,32 +433,42 @@ def new_capture():
             for participant in other_participants:
                 cap_data["channels"] = channel_workloads.pop()
                 resp = requests.post(f"http://{participant.get_ip_address()}:{PORT_SLAVE}{url_for('create_local_capture')}", json=cap_data)
+                msg = resp.json().get("message", "Message missing.")
                 if resp.status_code != 200:
                     #TODO: here an undo of adding all previous local captures would be necessary
                     print(data)
-                    print(resp.json().get("message", "Error occured"))
+                    _logger.error("[-] Creation of local capture on participant [%s] for global capture [%s] failed: %s", 
+                                    participant.get_device_id(), global_id, msg)
                 else:
-                    print(resp.json().get("message"))
+                    _logger.info("[+] Creation of local capture on participant [%s] for global capture [%s] successful: %s", 
+                                    participant.get_device_id(), global_id, msg)
             #all local captures should now be in state PREPARED
             
             #start the local captures on the other nodes
             for participant in other_participants:
                 resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}{url_for('start_global_capture', global_id=global_id)}")
+                msg = resp.json().get("message", "Message missing.")
                 if resp.status_code != 200:
                     #TODO: here an undo would be necessary
-                    print(resp.json().get("message", "Error occured"))
+                    _logger.info("[-] Starting local capture on participant [%s] for global capture [%s] failed: %s",
+                                    participant.get_device_id(), global_id, msg)
+                else:
+                    _logger.info("[+] Starting local capture on participant [%s] for global capture [%s] successful: %s", 
+                                    participant.get_device_id(), global_id, msg)
             #all local captures except the one on the master should be in state RUNNING
             #now, just like in the solitary mode, start the local capture on this master node
 
         #after creating the local capture on this node, we can start it (solitary as well as distributed capture mode)
         resp = requests.get(f"http://localhost:80{url_for('start_local_capture', cap_id=cap_id)}")
         data = resp.json()
-        msg = data.get("message", "Error occured")
+        msg = data.get("message", "Message missing")
 
         if resp.status_code == 200:
             flash(msg, "success")
+            _logger.info("[+] Starting capture with id [%d] was successful.", cap_id)
         else:
             flash(msg, "danger")
+            _logger.info("[-] Starting capture with id [%d] failed.", cap_id)
 
         return redirect(url_for("home"))
 
@@ -519,6 +555,8 @@ def create_local_capture():
         db.session.add(cap)
         db.session.commit()
     except Exception as e:
+        #just print this here, the log entry will be created on the master node based
+        #on the returned json
         print(e)
         return jsonify({'message': 'Capture creation failed.'}), 400
 
@@ -588,7 +626,10 @@ def capture_stop(id):
         flash(f"Capture with id '{id}' does not exist.", "danger")
         return redirect(url_for("home"))
 
+    _logger.info("[*] Trying to stop capture with id [%d]", id)
+
     if cap.is_distributed:
+        _logger.info("[*] Capture that is to be stopped with id [%d] is distributed.", id)
         other_sniffers = cap.sniffers
 
         global_id = cap.global_id
@@ -598,16 +639,22 @@ def capture_stop(id):
             participant = network.get_master().get_device(sniffer.device_identifier)
             resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('stop_global_capture', global_id=global_id)}")
             data = resp.json()
-            msg = data.get("message", "Error occured")
+            msg = data.get("message", "Message missing.")
             if resp.status_code != 200:
                 #todo: some kind of recovery
+                _logger.error("[-] Stopping local capture on participant [%s] for global capture [%s] failed: %s",
+                                    sniffer.device_identifier, global_id, msg)
                 flash(f"Error stopping capture on device {sniffer.device_identifier}: {msg}", "danger")
                 return redirect(url_for("home"))
-        #TODO: stop local master capture
-
+            else:
+                _logger.info("[+] Stopped local capture on participant [%s] for global capture [%s]: %s",
+                                    sniffer.device_identifier, global_id, msg)
+        
+        #IN CASE you would want wsniff to be for normal endusers, directly collecting the data here
+        #would make sense, however for research users this will be uncommented
+        #before the follwing code you would also have to stop the local master capture
         #then collect and integrate the data on the master node
         for participant in other_sniffers:
-            #just for testing:
             continue
 
             resp = requests.get(f"http://{participant.ip_address}:{PORT_SLAVE}/{url_for('collect_local_capture', global_id=global_id)}")
@@ -635,10 +682,12 @@ def capture_stop(id):
     #stop this local capture on the master node here
     resp = requests.get(f"http://localhost:80/{url_for('stop_local_capture', id=id)}")
     data = resp.json()
-    msg = data.get("message", "Error occured")
+    msg = data.get("message", "Missing message")
     if resp.status_code == 200:
+        _logger.info("[+] Capture with id [%s] was stopped successfully: %s", id, msg)
         flash(msg, "success")
     else:
+        _logger.error("[+] Capture with id [%s] could not be stopped: %s", id, msg)
         flash(msg, "danger")
 
     return redirect(url_for("home"))
@@ -698,18 +747,21 @@ def collect_global_capture(global_id: str):
     if cap is None:
         return jsonify({'message': f'Capture with global id "{global_id}" does not exist.'}), 400 
 
+    _logger.info("[*] Trying to collect distributed data for global capture [%s].", global_id)
     other_sniffers = cap.sniffers
     for sniffer in other_sniffers:
         participant = network.get_master().get_device(sniffer.device_identifier)
+        device_id = sniffer.device_identifier
         resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('collect_local_capture', global_id=global_id)}")
         data = resp.json()
-        msg = data.get("message", "Error occured")
+        msg = data.get("message", "Message missing")
         if resp.status_code != 200:
             #todo: some kind of recovery
-            flash(f"Error collecting data on device {participant.get_device_id()}: {msg}", "danger")
+            _logger.error("[-] Error collecting data on device [%s] for global capture [%s]: %s", device_id, global_id, msg)
+            flash(f"Error collecting data on device {device_id}: {msg}", "danger")
             return redirect(url_for("home"))
         else:
-            print(f"[+] <{participant.get_device_id()}>: {msg}")
+            _logger.info("[+] Collected data on device [%s] for global capture [%s]: %s", device_id, global_id, msg)
  
         #else (received data of this local capture)
         #how we need to integrate the data depends on the capture type
@@ -724,9 +776,9 @@ def collect_global_capture(global_id: str):
             try:
                 file = open(file_path, "wb")
                 file.write(captured_data)
-                print(f"[+] Wrote data of {participant.get_device_id()}")
+                _logger.info("[+] Wrote data of participant [%s] for global capture [%s]", device_id, global_id)
             except Exception as e:
-                print(f"[-] Error writing data: {e}")
+                _logger.exception("[-] Error writing data for global capture [%s]:", global_id)
         elif isinstance(cap, Map):
             #add discoveries belonging to this global capture to the local master capture
             discoveries = data.get("captured_data", [])
@@ -737,7 +789,7 @@ def collect_global_capture(global_id: str):
                     db.session.add(d)
                     db.session.commit()
                 except Exception as e:
-                    print(f"[-] Error adding discovery from {participant.get_device_id()}: {e}")
+                    _logger.exception("[-] Error adding discovery from [%s] for global capture [%s]:", device_id, global_id)
         else:
             #this case is already handled in collect_local_capture (and is caught above when handling the HTTP response)
             pass
@@ -752,16 +804,17 @@ def collect_global_capture(global_id: str):
         #delete the data on the node we just retrieved it from
         resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
         data = resp.json()
-        msg = data.get("message", "Error occured")
+        msg = data.get("message", "Missing message.")
         if resp.status_code != 200:
             #undo all previous deletions to remain in a consistent state
             db.session.rollback()
-            flash(f"Error deleting data on device <{participant.get_device_id()}>: {msg}", "danger")
+            _logger.error("[-] Error deleting data on participant [%s] for integration of global capture [%s]: %s", device_id, global_id, msg)
+            flash(f"Error deleting data on device [{device_id}]: {msg}", "danger")
             return redirect(url_for("home"))
         else:
             #actually update channel list
             db.session.commit()
-            print(f"[+] <{participant.get_device_id()}>: {msg}") 
+            _logger.info("[+] [%s]: %s", participant.get_device_id(), msg) 
     
     
     #now that all information is stored on this node, this has become a real local capture
@@ -771,6 +824,7 @@ def collect_global_capture(global_id: str):
     cap.is_distributed = False
     db.session.commit()
 
+    _logger.info("[+] Collected and integrated the data for global capture [%s]", global_id)
     flash("Collected and integrated the entire data on this device.", "success")
     return redirect(url_for("home"))
 
@@ -857,6 +911,8 @@ def capture_download(id):
         flash(f"Capture with id '{id}' does not exist.", "success")
         return redirect(url_for("home"))
 
+    _logger.info("[*] Trying to download capture with id [%d]", id)
+
     #if it is a full capture
     if isinstance(c, FullCapture):    
         dir_path = c.get_dir_path()
@@ -890,6 +946,8 @@ def capture_download(id):
         file.close()
         return send_from_directory(directory=out_dirpath, filename=c.title, as_attachment=True, attachment_filename=c.title.replace(" ", "_"))
 
+    _logger.info("[+] Downloaded capture with id [%d]", id)
+
     return redirect(url_for("home"))
 
 @app.route("/capture/<int:id>/delete")
@@ -899,39 +957,47 @@ def capture_delete(id: int):
     if cap is None:
         flash(f'Capture with id "{id}" does not exist.')
     
+    _logger.info("[*] Trying to delete capture with id [%d]", id)
+
     if cap.is_distributed:
         #delete data on other nodes
         other_sniffers = cap.sniffers
         global_id = cap.global_id
+        _logger.info("[*] Deletion of capture [%d]: capture is distributed with global id [%s].", id, global_id)
         for sniffer in other_sniffers:
             participant = network.get_master().get_device(sniffer.device_identifier)
             resp = requests.get(f"http://{participant.get_ip_address()}:{PORT_SLAVE}/{url_for('delete_local_capture', id=global_id, id_type='global_id')}")
             data = resp.json()
-            msg = data.get("message", "Error occured")
+            msg = data.get("message", "Message missing")
             if resp.status_code != 200:
                 #undo all previous deletions to remain in a consistent state
                 db.session.rollback()
-                flash(f"Error deleting data on device <{participant.get_device_id()}>: {msg}", "danger")
+                _logger.error("[-] Deletion of local capture for global capture [%s] on participant [%s] failed: %s", global_id, sniffer.device_identifier, msg)
+                flash(f"Error deleting data on device [{sniffer.device_identifier}]: {msg}", "danger")
                 return redirect(url_for("home"))
             else:
-                print(f"[+] <{participant.get_device_id}>: {msg}")
+                _logger.info("[+] Deleted local capture for global capture [%s] on Participant [%s]: %s", global_id, sniffer.device_identifier, msg)
 
     #delete local capture on this node
     resp = requests.get(f"http://localhost:80/{url_for('delete_local_capture', id=id, id_type='local_id')}")
     data = resp.json()
-    msg = data.get("message", "Error occured")
+    msg = data.get("message", "Message missing")
     if resp.status_code == 200:
+        _logger.info(msg)
         flash(msg, "success")
     else:
         db.session.rollback()
+        _logger.error("[-] Error when trying to delete local capture [%d].", id)
         flash(msg, "danger")
+        return redirect(url_for("home"))
     
     #only commit here so that the changes only apply if all deletions were possible
     try:
         db.session.commit()
+        _logger.info("[+] Successfully deleted capture with id [%d].", id)
     except Exception as e:
         print(e)
-        return jsonify({"message": f"Error when trying to delete capture from database."}), 400
+        _logger.exception("[-] Error when trying to delete local capture [%d] from database.", id)
 
     return redirect(url_for("home"))
 
@@ -1046,8 +1112,10 @@ def detect_start():
     """
     try:
         start_scan(get_interfaces(Mode.MONITOR))
+        _logger.info("[+] Started AP scan.")
         flash("Starting Access Point Scan", "success")
     except ValueError as e:
+        _logger.exception("[-] Starting AP scan failed:")
         flash(str(e), "danger")
     return redirect(url_for("detect_aps")) 
 
@@ -1058,6 +1126,7 @@ def detect_stop():
     Stop the detection of APs
     """
     stop_scan()
+    _logger.info("[+] Stopped AP scan.")
     flash("Stopped Access Point Scan", "success")
     return redirect(url_for("detect_aps")) 
 
@@ -1123,6 +1192,7 @@ def server_connect():
         flash("Your login credentials are wrong", "danger")
         return render_template("connect_to_server.html", title="Connect to wsniff server", form=form)
 
+    _logger.info("[+] Logged in on server as admin.")
     flash("You are now logged in on server as admin", "success") 
     return redirect(url_for("server_home"))
 
@@ -1150,6 +1220,7 @@ def server_connect_device():
     Try to connect this device using stored credentials
     """
     if server.connect_device():
+        _logger.info("[+] Device is connected to server.")
         flash("Device is connected.", "success")
         return redirect(url_for('server_home')) 
     else:
@@ -1172,10 +1243,12 @@ def server_register_device():
 
         #if device could be registered successfully and reauthetication worked
         if server.register_device(device_name):
+            _logger.info("[+] Device was registered on server.")
             flash("Device was registered. Your device is now fully connected.", "success")
             return redirect(url_for('server_home'))
         else:
             #it could be that there already is a device with that name
+            _logger.error("[+] Registration on server failed.")
             flash("Registration failed. Maybe there is already a device with that name.", "danger")
     
     return render_template("server_register_device.html", title="Register device", form=form)
@@ -1213,6 +1286,7 @@ def server_map_capture(id):
         capture.start_capture(id, get_interfaces(Mode.MONITOR)[0], capture_behavior)
         map.state = CaptureState.RUNNING
         db.session.commit()
+        _logger.info("[+] Started server capture with id [%d]", id)
         flash(f"Capture started", "success")
     except ValueError as e:
         #capture state in DB is FAILED by default when created, so we don't need to set this here
@@ -1250,7 +1324,7 @@ def server_map_participate(id):
         db.session.add(map)
         db.session.commit()
     except Exception as e:
-        print(e)
+        _logger.exception("Local map creation failed.")
         flash("Local map creation failed.", "danger")
         return redirect(url_for('server_home')) 
     
@@ -1270,6 +1344,7 @@ def server_map_local_delete(id: int):
     try:
         db.session.delete(map)
         db.session.commit()
+        _logger.info("[+] Deleted local capture data (id: %d) for server map.", id)
         flash("Local data was deleted.", "success")
     except Exception as e:
         flash("Could not delete local map data.", "danger")
@@ -1292,16 +1367,6 @@ def lookup_oui(mac:str):
     """
     return jsonify({'vendor': oui.lookup(mac)})
 
-@app.route('/devices/<ip>/oui/<mac>', methods=["GET"])
-@login_required
-def remote_lookup_oui(ip:str, mac:str):
-    """
-    Returns the vendor information for this mac address
-    """
-    resp = requests.get(f"http://{ip}:4242/oui/{mac}")
-    print(resp.text)
-    if resp.status_code == 200:
-        return jsonify({'reply': resp.json()})
 
 ########################################wsniff devices###########################################
 @app.route("/devices/connected")
@@ -1383,11 +1448,11 @@ def configure_external_wifi():
             proc_res = subprocess.run(cmd, text=True, capture_output=True, shell=True, check=True)
             res = proc_res.stdout
             if res:
-                print(f"[+] wpa_cli reconfigure: {res}")
+                _logger.info("[+] wpa_cli reconfigure: %s", str(res))
                 flash("Reconnecting to new network.", "success")
         except subprocess.CalledProcessError as e:
             #otherwise tell the user to reconnect via a reboot
-            print(f"[-] wpa_cli reconfigure failed: {e}")
+            _logger.exception("[-] wpa_cli reconfigure failed:")
             flash(f"Reboot to connect to new network.", "info")
 
 

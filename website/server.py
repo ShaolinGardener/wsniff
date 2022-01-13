@@ -172,7 +172,6 @@ def register_device(device_name: str):
     data = {'name': device_name, 'password': pass_token}
     try:
         data, resp = post('/users', data=data)
-        print(data)
         if not resp.status_code == 200:
             return False
         

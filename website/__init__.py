@@ -1,9 +1,11 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
+from flask_login import LoginManager, AnonymousUserMixin
 
 import os
+import json
+import logging.config
 from website.oui import load_local_oui
 import display.display as display
 from website.settings import ROLE
@@ -18,6 +20,13 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+#we have to pass our own customized AnonysmousUserMixin 
+#for our logging in case the user has not logged in yet
+class MyAnonymousUser(AnonymousUserMixin):
+    @property
+    def username(self):
+        return "not signed in"
+login_manager.anonymous_user = MyAnonymousUser
 login_manager.login_message = "You have to log in before using wsniff."
 login_manager.login_message_category = "danger"
 
@@ -26,6 +35,16 @@ from website.models import Capture, User, Device
 
 #because of gunicorn you have to call this in __init__.py
 def setup():
+    #initalize logging system as declared in the corresponding config file
+    with open(os.path.join("website", "logger.json"), 'rt') as f:
+        config = json.load(f)
+        logging.config.dictConfig(config)
+
+    _logger = logging.getLogger('website')
+    _logger.info("[+] wsniff was started in directory %s", os.getcwd())
+
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
     load_local_oui(directory_path="./website/static/res")
 
     #create temp directory
