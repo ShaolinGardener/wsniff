@@ -19,17 +19,24 @@ class Interface:
     """
 
     def __init__(self, name: str, mode:Mode = Mode.MANAGED):
+        """
+        name: the actual name the interface currently has
+        """
         self.mode = mode
 
+        self.real_name = name
         if mode == Mode.MONITOR:
             #assuming it follows this pattern of ending monitoring interfaces with 'mon'
-            self.name = name[:-3]
-            self.mon_name = name
-            self.current_name = name
+            if "mon" in name:
+                #name is basically the "managed_name"
+                self.name = name[:-3]
+                self.mon_name = name
+            else:
+                self.name = name
+                self.mon_name = name + "mon"
         else:
             self.name = name
             self.mon_name = name + "mon"
-            self.current_name = name
 
         #the 802.11 channels that this interface can listen on
         self.channels = self.get_channels()
@@ -52,10 +59,22 @@ class Interface:
         return f"{self.name}"
 
     def get_name(self):
+        """
+        Return the monitor name if the adapter is in monitor mode,
+        otherwise the name it has in its managed mode
+        """
+        return self.real_name
+        #old
         if self.mode == Mode.MONITOR:
             return self.mon_name
         else:
             return self.name
+
+    def get_managed_name(self):
+        return self.name
+
+    def get_monitor_name(self):
+        return self.mon_name
 
     def enable_monitor_mode(self):
         """
@@ -64,7 +83,7 @@ class Interface:
         """
         subprocess.run(self.str_monitor_enable, shell=True, check=True)
         self.mode = Mode.MONITOR
-        self.current_name = self.mon_name
+        self.real_name = self.mon_name
         _logger.info("[+] Activated monitor mode for %s", self.name)
 
     def disable_monitor_mode(self):
@@ -75,11 +94,11 @@ class Interface:
 
         subprocess.run(self.str_monitor_disable, shell=True, check=True)
         self.mode = Mode.MANAGED
-        self.current_name = self.name
+        self.real_name = self.name
         _logger.info("[+] Deactivated monitor mode for %s", self.name)
  
     def get_channels(self):
-        interface = self.current_name
+        interface = self.real_name
         channels = []
         try:
             cmd = f"iwlist {interface} channel"
@@ -101,7 +120,7 @@ class Interface:
         Sets the channel of this interface to the given value.
         raises subprocess.CalledProcessError error in case some error occurs
         """
-        subprocess.run(f"iwconfig {self.current_name} channel {channel}", shell=True, check=True)
+        subprocess.run(f"iwconfig {self.real_name} channel {channel}", shell=True, check=True)
 
 
 def _get_interface_names():
@@ -126,28 +145,31 @@ def _get_wireless_interface_names():
     return list(filter(lambda iface: "wlan" in iface, ifaces))
 
 
+#a dict of all interfaces available
+interfaces = {}
+#initialize it in case there are already some interfaces in monitor mode when starting wsniff
+#especially the ones you have to manually put in monitor mode (because their driver sucks)
+cmd = "iwconfig"
+proc_res = subprocess.run(cmd, text=True, capture_output=True, shell=True, check=True)
+output = proc_res.stdout
+lines = output.split("\n")
+for i, line in enumerate(lines):
+    if line.startswith("wlan"):
+        interface_name = line.split(" ")[0]
+        if "Monitor" in line or "Monitor" in lines[i+1]:
+            interfaces[interface_name] = Interface(interface_name, Mode.MONITOR)
+        else:
+            interfaces[interface_name] = Interface(interface_name, Mode.MANAGED)
+
 
 def monitor_interface_available():
     """
     Returns if there is at least one interface in monitor mode connected to the raspberry.
     """
-    #wireless interfaces
-    iw = _get_wireless_interface_names()
-    #get wireless interfaces in monitor mode
-    mon_iw = list(filter(lambda iface: "mon" in iface, iw))
-    return len(mon_iw) > 0
-
-
-
-#a dict of all interfaces available
-interfaces = {}
-#initialize it in case there are already some interfaces in monitor mode when starting wsniff
-names = _get_wireless_interface_names()
-for name in names:
-    if "mon" in name:
-        interfaces[name[:-3]] = Interface(name, Mode.MONITOR)
-    else:
-        interfaces[name] = Interface(name, Mode.MANAGED)
+    for interface in interfaces.values():
+        if interface.mode == Mode.MONITOR:
+            return True
+    return False
 
 def update_interfaces():
     """
