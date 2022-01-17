@@ -129,6 +129,39 @@ class Sniffer(db.Model):
     #note: it does not make sense to store the IP address here, since it can change over time, so it is better
     #to restrict the access to the newest address which is available using the master object in the network module
 
+class AttributeType:
+    String = "String"
+    Integer = "Integer"
+    Real = "Real"
+
+class CaptureAttribute(db.Model):
+    """
+    Used to add attributes to captures dynamicaly during runtime without 
+    the need for schema modification.
+    """
+    capture_id = db.Column(db.Integer, db.ForeignKey("captures.id", ondelete="CASCADE"), primary_key=True)
+    attribute = db.Column(db.String(64), primary_key=True)
+    value = db.Column(db.Text)
+    type = db.Column(db.String(32))
+
+    def set_value(self, value):
+        str_representation = None
+        if self.type == AttributeType.String:
+            str_representation = value
+        if self.type == AttributeType.Integer or AttributeType.Real:
+            str_representation = str(value)
+        else:
+            str_representation = str(value)
+        self.value = str_representation
+
+    def get_value(self):
+        if self.type == AttributeType.Integer:
+            return int(self.value)
+        if self.type == AttributeType.Real:
+            return float(self.value)
+        else:
+            return self.value
+
 class Capture(db.Model):
     """
     Base class for all activities that involve capturing and processing 802.11 data.
@@ -139,6 +172,7 @@ class Capture(db.Model):
     title = db.Column(db.String(128), nullable=False)
     desc = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_stopped = db.Column(db.DateTime, nullable=True)
     
     #CaptureStates
     state = db.Column(db.Integer, nullable=False, default=CaptureState.FAILED)
@@ -152,6 +186,12 @@ class Capture(db.Model):
         'polymorphic_on': type
     }
 
+    #channels that are observed as part of this capture
+    channels = db.relationship('CaptureChannel', cascade="all, delete")
+
+    #other attributes of this capture that are stored generically in an EAV table
+    other_attributes = db.relationship('CaptureAttribute', cascade="all, delete")
+
     #flag whether the capture was done entirely by this sniffer or if there were other sniffers involved
     is_distributed = db.Column(db.Boolean, nullable=False, default=False)
 
@@ -161,12 +201,14 @@ class Capture(db.Model):
     #format: <device_identifier>(36):<master_local_capture_id>
     global_id = db.Column(db.String(50), nullable=True, unique=True)
 
-    #channels that are observed as part of this capture
-    channels = db.relationship('CaptureChannel', cascade="all, delete")
-
     #other sniffers that were involved in this capture in case this was a distributed capture
     sniffers = db.relationship('Sniffer', cascade="all, delete")
 
+    def duration(self):
+        """
+        The duration of the capture in seconds
+        """
+        return (self.date_stopped - self.date_created).total_seconds()
 
     def get_channels(self):
         """
@@ -237,6 +279,24 @@ class Capture(db.Model):
         #but this way it is easier to read
         return output
 
+    def set_other_attribute(self, attribute_name, value):
+        for attribute in self.other_attributes:
+            if attribute.attribute == attribute_name:
+                attribute.set_value(value)
+                try:
+                    db.session.add(attribute)
+                    db.session.commit()
+                except Exception as e:
+                    print(e)
+                return
+        raise Exception(f"This capture does not have an attribute with name: {attribute_name}")
+
+    def get_other_attribute(self, attribute_name):
+        for attribute in self.other_attributes:
+            if attribute.attribute == attribute_name:
+                return attribute.get_value()
+        raise Exception(f"This capture does not have an attribute with name: {attribute_name}")
+
     def add_participant(self, participant):
         """
         Add another participant to this distributed capture as a slave.
@@ -290,6 +350,9 @@ class Map(Capture):
     
     #all discoveries that were made creating this map
     discoveries = db.relationship('Discovery', back_populates='map', cascade="all, delete")
+
+    def get_num_aps(self):
+        return len(self.discoveries)
 
     def __repr__(self):
         return f"Map('{self.id}', '{self.title}')"

@@ -780,8 +780,14 @@ def collect_global_capture(global_id: str):
             except Exception as e:
                 _logger.exception("[-] Error writing data for global capture [%s]:", global_id)
         elif isinstance(cap, Map):
+            #retrieve transmitted data
+            num_packets = data.get("captured_data", {}).get("num_packets")
+            discoveries = data.get("captured_data", {}).get("discoveries")
+            #add number of captured packets
+            current_num_packets = cap.get_other_attribute("num_packets")
+            cap.set_other_attribute("num_packets", current_num_packets + num_packets)
+
             #add discoveries belonging to this global capture to the local master capture
-            discoveries = data.get("captured_data", [])
             for discovery in discoveries:
                 d = Discovery.create_from_dict(discovery)
                 d.map_id = cap.id
@@ -860,10 +866,16 @@ def collect_local_capture(global_id: str):
                 "encoded_content": encoded_content
             }
     elif isinstance(cap, Map):
-        captured_data = []
+        discoveries = []
         for discovery in cap.discoveries:
             d = discovery.get_as_dict()
-            captured_data.append(d)
+            discoveries.append(d)
+        num_packets = cap.get_other_attribute("num_packets")
+        captured_data = {
+                "num_packets": num_packets,
+                "discoveries": discoveries
+        }
+        
     else:
         return jsonify({'message': f"Data collection for this capture type is not implemented."}), 400  
 

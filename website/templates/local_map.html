@@ -9,6 +9,13 @@
 {% if map.desc %}
 <p>{{ map.desc }}</p>
 {% endif %}
+<p>
+    <p>Started: {{ map.date_created }} </p>
+    <p>Stopped: {{ map.date_stopped }}</p>
+    <p>Duration [s]: {{ map.duration() }} </p>
+    <p>#packets: {{ map.get_other_attribute("num_packets") }}</p>
+    <p>#APs: {{ map.get_num_aps() }}</p>
+</p>
 
 
 <div id="mapid" style="height: 500px;"></div>

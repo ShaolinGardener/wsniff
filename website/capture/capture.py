@@ -137,7 +137,6 @@ class Capture:
             process.join()
             _logger.info("[*] Stopped capture process.")
 
-
         _logger.info(f"[+] Capture {self.id} Stopped")
 
     def get_num_packets(self):

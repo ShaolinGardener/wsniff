@@ -1,5 +1,5 @@
 from website import app, db
-from website.models import Discovery, FullCapture, Map
+from website.models import Discovery, Capture, FullCapture, Map, CaptureAttribute, AttributeType
 from website.interfaces import Interface
 import website.gps as gps
 import website.oui as oui
@@ -26,8 +26,14 @@ class CaptureBehavior(ABC):
     abstract base class for defining the capturing behavior of a capture
     """
 
+    def __init__(self, capture_db):
+        """
+        Takes the database representation object of this capture 
+        """
+        self.capture_db = capture_db
+
     
-    def init(self, capture):
+    def init(self, capture: Capture):
         """
         important: called by a freshly created Capture-object cause both that and this object need a reference to each other
         """
@@ -58,16 +64,30 @@ class CaptureBehavior(ABC):
         Work that should be done after the last frame has been captured
         AND processed.
         """
-        pass
+        self.capture_db.date_stopped = datetime.utcnow()
+        try:
+            db.session.add(self.capture_db)
+            db.session.commit()
+        except Exception as e:
+            print(e)
 
 
 class TestBehavior:
     """
-    do not capture any packets
+    do not process the packets, just count packets
     """ 
+    def start_capture(self):
+        self.num_packets = CaptureAttribute(attribute="num_packets", type=AttributeType.Integer)
+        self.packet_counter = 0
     
     def process_packet(self, frame):
-        pass
+        self.packet_counter += 1
+
+    def stop_capture(self):
+        super().stop_capture()
+        self.num_packets.set_value(self.packet_counter)
+        self.capture.other_attributes.append(self.num_packets)
+        db.session.commit()
 
 
 class CaptureAllBehavior(CaptureBehavior):
@@ -80,6 +100,7 @@ class CaptureAllBehavior(CaptureBehavior):
         cap: the database object representing this capture
             Stores all the information needed for this capture behavior
         """
+        super().__init__(cap)
         self.channels = cap.get_channels()
 
         self.gps_tracking = cap.gps_tracking
@@ -109,6 +130,7 @@ class CaptureAllBehavior(CaptureBehavior):
             self.gps_route.start_capture()
 
     def stop_capture(self):
+        super().stop_capture()
         if self.gps_tracking:
             self.gps_route.stop_capture()
 
@@ -150,6 +172,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
     """  
     
     def __init__(self, map: Map):
+        super().__init__(map)
         #the 802.11 channels to observe 
         self.channels = map.get_channels()
 
@@ -165,6 +188,9 @@ class MapAccessPointsBehavior(CaptureBehavior):
 
 
     def start_capture(self):
+        #also store the number of packets so that we can study the relationship to #discoverered_APs
+        self.num_packets = CaptureAttribute(attribute="num_packets", type=AttributeType.Integer)
+        self.packet_counter = 0
 
         #hop through channels - hopping thread
         hopping_strategy = EvenlyDistributedHopping(delay=0.25)
@@ -219,6 +245,7 @@ class MapAccessPointsBehavior(CaptureBehavior):
 
 
     def process_packet(self, frame):
+        self.packet_counter += 1
 
         if frame.haslayer(Dot11Beacon):
             #bssid of AP is stored in second address field of header
@@ -249,10 +276,20 @@ class MapAccessPointsBehavior(CaptureBehavior):
                     self.aps[bssid].refresh(signal_strength)
 
     def stop_capture(self):
-        #stop thread
+        super().stop_capture()
+
+        #stop threads
         self._running.clear()
         self.hopper.stop_hopping()
         self.cleaning_thread.join()
+
+        #store the number of packets that were processed 
+        self.num_packets.set_value(self.packet_counter)
+        try:
+            self.map.other_attributes.append(self.num_packets)
+            db.session.commit()
+        except Exception as e:
+            print(e)
 
         #store APs in DB if not done so before
         for bssid in self.aps:
@@ -270,6 +307,7 @@ class OnlineMapBehavior(CaptureBehavior):
     """  
     
     def __init__(self, map:Map):
+        super().__init__(map)
         #the 802.11 channels to observe 
         self.channels = map.get_channels()
         
@@ -371,6 +409,8 @@ class OnlineMapBehavior(CaptureBehavior):
         self._running.clear()
         self.hopper.stop_hopping()
         self.cleaning_thread.join()
+
+        super().stop_capture()
 
         #store APs in DB if not done so before
         for bssid in self.aps:
