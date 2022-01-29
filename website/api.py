@@ -55,6 +55,7 @@ def upload_discovery(d: Discovery):
     d: a local Discovery object
     Upload the given local Discovery object to the server via the API
     """
+    
     server_map_id = d.map.server_map_id
     data = {
         "access_point_mac": d.mac,

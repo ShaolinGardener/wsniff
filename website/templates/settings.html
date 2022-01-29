@@ -56,6 +56,23 @@
   <p class="mt-2"><small>Your current IP address in the network which you are connected to is: <b>{{ ip_address }}</b></small></p>
 </div>
 
+<!-- distributed captures -->
+<div class="mt-4 text-justify">
+  <h2>Distributed Sniffing</h2>
+  <p>Connect other sniffers to this device in order to use distributed captures.</p>
+  <a class="nav-item nav-link" href=" {{ url_for('show_network_discovery') }}">Other Devices</a>
+  <p class="mt-2"><small>You need to start the other participants in the corresponding mode and connect them to the wireless network of this device.</b></small></p>
+</div>
+
+<!-- distributed captures -->
+<div class="mt-4 text-justify">
+  <h2>wsniff-server</h2>
+  <p>Connect this device to a wsniff-server.</p>
+  <a class="nav-item nav-link" href=" {{ url_for('server_connect') }}">Connect to new server.</a>
+  <p class="mt-2"><small>Using multiple sniffing units simultaneously which are all connected to a server will allow you to create wardriving maps even faster.</b></small></p>
+</div>
+
+
 <!-- download sniffer log -->
 <div class="mt-4 text-justify">
   <h2>Logging</h2>

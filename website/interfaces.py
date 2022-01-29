@@ -84,7 +84,7 @@ class Interface:
         subprocess.run(self.str_monitor_enable, shell=True, check=True)
         self.mode = Mode.MONITOR
         self.real_name = self.mon_name
-        _logger.info("[+] Activated monitor mode for %s", self.name)
+        
 
     def disable_monitor_mode(self):
         """
@@ -95,7 +95,7 @@ class Interface:
         subprocess.run(self.str_monitor_disable, shell=True, check=True)
         self.mode = Mode.MANAGED
         self.real_name = self.name
-        _logger.info("[+] Deactivated monitor mode for %s", self.name)
+        
  
     def get_channels(self):
         interface = self.real_name

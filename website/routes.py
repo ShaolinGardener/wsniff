@@ -32,6 +32,9 @@ import logging
 import json
 from scapy.all import *
 
+# NOTE: all three layers of the wsniff-client are united here 
+# (GLOBAL, LOCAL, FRONTEND). We should probably separate the routes in
+# future based on the layer they act on and their function -> use Blueprints
 
 #init logger
 _logger = logging.getLogger("website.routes")
@@ -39,7 +42,8 @@ _logger = logging.getLogger("website.routes")
 #we want to log every request which the client sends
 @app.after_request
 def after_request(response):
-    _logger.info('[%s] User: %s - %s %s %s %s', request.remote_addr, current_user.username, request.method, request.scheme, request.full_path, response.status)
+    #[%s] request.remote_addr
+    _logger.info('[%s] User: %s - %s %s %s %s', current_user.username, request.method, request.scheme, request.full_path, response.status)
     return response
 
 #alle nicht existenten URLs zur basisseite routen
@@ -118,7 +122,7 @@ def login():
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             #this sets current_user to user, so we can access all attributes defined in User
             login_user(user, remember=form.remember.data)
-            _logger.info("[*] User with username <%s> logged in.", form.username.data)
+            _logger.info("User: %s, [*] User with username <%s> logged in.", form.username.data, form.username.data)
             flash("You are logged in!", "success")
 
             #if user tried to access a special page before authenticating, redirect there
@@ -221,6 +225,7 @@ def activate_monitor(interface:str):
     try:
         iface = get_all_interfaces()[interface]
         iface.enable_monitor_mode()
+        _logger.info("User: %s [+] Activated monitor mode for %s", current_user.username, interface)
     except:
        flash(f"Could not turn '{interface}' into monitor mode", "danger") 
        return redirect(url_for("settings"))
@@ -237,6 +242,7 @@ def deactivate_monitor(interface:str):
     try:
         iface = get_all_interfaces()[interface]
         iface.disable_monitor_mode()
+        _logger.info("User: %s [+] Deactivated monitor mode for %s", current_user.username, interface)
     except:
        flash(f"Could not disable '{interface}'", "danger") 
        return redirect(url_for("settings"))
@@ -1124,7 +1130,7 @@ def detect_start():
     """
     try:
         start_scan(get_interfaces(Mode.MONITOR))
-        _logger.info("[+] Started AP scan.")
+        _logger.info("User: %s [+] Started AP scan.", current_user.username)
         flash("Starting Access Point Scan", "success")
     except ValueError as e:
         _logger.exception("[-] Starting AP scan failed:")
@@ -1403,6 +1409,32 @@ def start_network_discovery():
         flash(str(e), "danger")
     return redirect(url_for('show_network_discovery'))
 
+@app.route("/devices/use/<device_id>")
+@login_required
+def use_device(device_id:str):
+    """
+    Actually use this device for distributed captures.
+    """
+    try:
+        network.get_master().use_device(device_id)
+        flash("Added device.", "success")
+    except Exception as e:
+        _logger.exception("Error adding device: ")
+    return redirect(url_for('show_network_discovery'))
+
+@app.route("/devices/remove/<device_id>")
+@login_required
+def remove_used_device(device_id:str):
+    """
+    Remove this device from the list of used devices. It will still be connected.
+    """
+    try:
+        network.get_master().remove_used_device(device_id)
+        flash("Removed device.", "success")
+    except Exception as e:
+        _logger.exception("Error adding device: ")
+    return redirect(url_for('show_network_discovery'))
+
 @app.route("/devices/end_search")
 @login_required
 def stop_network_discovery():
@@ -1472,3 +1504,8 @@ def configure_external_wifi():
     
     #displayed 
     return render_template("configure_external_wifi.html", title="Configure external wifi", form=form)
+
+@app.route("/arbeit")
+@login_required
+def arbeit():
+    return render_template("arbeit.html", title="Connect") 

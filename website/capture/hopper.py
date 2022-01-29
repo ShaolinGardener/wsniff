@@ -125,6 +125,26 @@ class RandomStrategy(HoppingStrategy):
     def get_delay(self, channel_stats):
         return self.delay
 
+
+class SnakeStrategy(HoppingStrategy):
+        def __init__(self, delay):
+            """
+            delay: the time span to wait between two hops
+            """
+            super().__init__()
+            self.delay = delay
+            self.current_start = 1
+
+        def get_hop(self, channel_stats:_ChannelStatistics):
+            #sample will always return k UNIQUE elements of the list
+            #NOTE: that means the number of interfaces has to be smaller than the number of channels
+            channels =  list(map(lambda x: (x % 13)+1 if x > 13 else x, range(self.current_start, self.current_start+self.num_interfaces)))
+            self.current_start = (self.current_start)%14 + 1
+            return channels
+
+        def get_delay(self, channel_stats):
+            return self.delay
+
 class EvenlyDistributedHopping(HoppingStrategy):
     """
     The channel distance will be maximized here in order to prevent channel overlapping and 

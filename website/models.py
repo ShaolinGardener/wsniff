@@ -125,7 +125,7 @@ class Sniffer(db.Model):
     #id = db.Column(db.Integer, primary_key=True)
     capture_id = db.Column(db.Integer, db.ForeignKey("captures.id", ondelete="CASCADE"), primary_key=True)
     #device identifier of this participant
-    device_identifier = db.Column(db.String(36), nullable=False) 
+    device_identifier = db.Column(db.String(36), primary_key=True) 
     #note: it does not make sense to store the IP address here, since it can change over time, so it is better
     #to restrict the access to the newest address which is available using the master object in the network module
 

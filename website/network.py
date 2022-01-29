@@ -82,9 +82,11 @@ class Participant():
     """
     Encapsulates the information about a sniffer that forms a logical unit with other devices.
     """
+
     def __init__(self, device_id, ip_address):
        self.ip_address = ip_address 
        self.device_id = device_id
+       self.is_used = False
     
     def get_ip_address(self):
         return self.ip_address
@@ -94,6 +96,12 @@ class Participant():
 
     def get_device_id(self):
         return self.device_id
+
+    def is_used(self):
+        return self.is_used
+
+    def set_used(self, value:bool):
+        self.is_used = value
 
     def get_dict(self):
         """
@@ -116,6 +124,10 @@ class Master():
         #dicttionary of all fully connected participants
         #structure: {device_identifier: participant_object} 
         self.clients_established = {}
+        
+        #participants that are connected AND are supposed to take part in
+        #distributed captures (you can add and remove connected participants) from this sequence
+        self.clients_used = {}
 
         #Thread used to look for other wsniff devices
         self.discovery_thread = None
@@ -126,18 +138,48 @@ class Master():
         Searches for a slave with the given device_id and returns its IP address.
         Throws an exception in case there is no participant with this device_id
         """
-        for participant in self.get_connected_devices():
+        for participant in list(self.clients_established.values()):
             if participant.get_device_id() == device_id:
                 return participant
         
         raise Exception(f"There is no participant with device id {device_id}")
 
+    def use_device(self, device_id: str):
+        """
+        Adds a connected device to the list of participants that are actually used for
+        distributed captures.
+        """
+        try:
+            device = self.get_device(device_id)
+            self.clients_used[device_id] = device
+            device.set_used(True)
+        except Exception as e:
+            raise e
+
+    def remove_used_device(self, device_id: str):
+        """
+        Removes a device that is in the list of participants that are actually used for
+        distributed captures. It will still be connected.
+        """
+        try:
+            device = self.clients_used.pop(device_id)
+            device.set_used(False)
+        except Exception as e:
+            raise e
+
 
     def get_connected_devices(self):
         """
-        Returns a list of all participants that are connected to this master node.
+        Returns a list of all participants that have established a connection with the master.
         """
         return list(self.clients_established.values())
+        
+    def get_used_devices(self):
+        """
+        Returns a list of all participants that should actually be used for captures.
+        This is a subset of the devices that have established a connection.
+        """
+        return list(self.clients_used.values())
 
     def get_pending_devices(self):
         """

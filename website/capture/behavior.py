@@ -6,6 +6,7 @@ import website.oui as oui
 from website.interfaces import Interface, get_interfaces, Mode
 from website.capture.hopper import Hopper, HoppingStrategy, EvenlyDistributedHopping
 from website.api import upload_discovery
+import website.server as server
 
 import display.display as display
 
@@ -334,6 +335,7 @@ class OnlineMapBehavior(CaptureBehavior):
         cleaning_thread.daemon = True
         cleaning_thread.start()
 
+
     def add_discovery(self, ap: _AccessPoint):
         """
         Adds AP discovery to database
@@ -351,10 +353,13 @@ class OnlineMapBehavior(CaptureBehavior):
         try:
             db.session.add(d)
             db.session.commit()
+
             return d
         except:
             print("[-] Adding discovery to DB failed.")
             return None
+        
+        
 
 
     def clean(self, t_remove=180, t_sleep=30):
@@ -372,6 +377,12 @@ class OnlineMapBehavior(CaptureBehavior):
                     ap = self.aps[bssid]
                     self.add_discovery(ap)
                     del self.aps[bssid]
+
+            #upload data to server if possible
+            if server.server_is_available(timeout=1.0):
+                for discovery in self.map.discoveries.discoveries:
+                    if not discovery.is_uploaded:
+                        upload_discovery(discovery)
 
 
     def process_packet(self, frame):

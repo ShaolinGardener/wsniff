@@ -16,7 +16,16 @@
     <ul id="connected-devices">
       It seems no device is connected.
     </ul>
-
+    
+    {% if used_devices %}
+      <h2>Used devices</h2>
+      <ul>
+        {% for device in used_devices %}
+        <li>{{device.get_device_id()}}-->{{device.get_ip_address()}}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    
     <script>
       "use strict";
 
@@ -35,7 +44,7 @@
           let d = undefined;
           for(let device of devices) {
             d = document.createElement("li");
-            d.innerHTML = "[" + device.device_id + "] --> " + device.ip_address;
+            d.innerHTML = "[" + device.device_id + "] --> " + device.ip_address + "<a href='/devices/use/" + device.device_id + "'>Use device</a>";
             device_list.appendChild(d);
           }
         }
